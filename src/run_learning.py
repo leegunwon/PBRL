@@ -80,7 +80,8 @@ class Run_Simulator:
             # trajectory len을 하이퍼 파라미터로 설정하여 trajectory len 만큼의 action이 수행된 결과를 출력
             # 랜덤으로 시점을 설정하여 의사결정을 수행함.
             # 범위는 초반 dispatching을 수행한 후 부터 마지막 결정 - trajectory len 만큼
-            Simulator.run_random_rule(self.action_list)
+            Hyperparameters.mode = 1
+            PBRL.main()
 
         elif mode == "labeling":
             app_run()
