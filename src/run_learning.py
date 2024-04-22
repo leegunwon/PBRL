@@ -36,7 +36,7 @@ class Run_Simulator:
 
     def main(self, mode, algorithm):
         logging.info(f"mode: {mode}")
-        logging.info(f"dsp_rule: {algorithm}")
+        logging.info(f"algoritm: {algorithm}")
         if mode == "learning":
             if algorithm == 'dqn':
                 if ActionManager.action_type == "action_masking":
@@ -54,9 +54,7 @@ class Run_Simulator:
                 PBRL.main()
             elif algorithm == 'reward_model':
                 # reward_model 학습 및 생성
-                PBRL.load_reward_model()
                 PBRL.learn_reward()
-                PBRL.save_reward_model()
 
         elif mode == 'evaluate':
             if algorithm == "dqn":

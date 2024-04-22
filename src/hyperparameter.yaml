@@ -15,7 +15,7 @@ hyperparameter:
   buffer_limit: 50000
   input_layer: 4
   output_layer: 1
-  episode: 20000
+  episode: 10000
 
 
 configRL:

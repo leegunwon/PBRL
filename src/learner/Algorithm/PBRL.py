@@ -15,20 +15,19 @@ from src.learner.common.Qnet import Qnet
 class PBRL:
     print("PBRL on")
     # reward model 바꿀 점 label 데이터를 바탕으로 학습 데이터 만들기
-
     reward_model = RewardModel(
         ds=Hyperparameters.input_layer,
         da=Hyperparameters.output_layer,
         ensemble_size=Hyperparameters.ensemble_size,
         lr=Hyperparameters.reward_lr,
         max_size=Hyperparameters.max_size,
-        size_trajectory=Hyperparameters.size_trajectory,
+        size_sample_action=Hyperparameters.size_sample_action,
         activation=Hyperparameters.activation)
+
     @classmethod
     def train(cls, q, q_target, memory, optimizer):
         for i in range(10):
             s, a, r, s_prime, done_mask = memory.sample(Hyperparameters.batch_size)
-            # q.number_of_time_list[a] += 1
             q_out = q(s)
             q_a = q_out.gather(1, a)
             max_q_prime = q_target(s_prime).max(1)[0].unsqueeze(1)
@@ -65,7 +64,7 @@ class PBRL:
             q.load_state_dict(params)
 
         for n_epi in range(Hyperparameters.episode):
-            epsilon = max(0.01, 0.8 - 0.001 * n_epi)
+            epsilon = max(0.01, 0.8 - 0.0001 * n_epi)
             s = env.reset(Parameters.datasetId)
             done = False
             score = 0.0
@@ -76,8 +75,8 @@ class PBRL:
                     a = q.sample_action(torch.from_numpy(s).float(), epsilon)
 
                 s_prime, r, done = env.step(a) # r은 그냥 0으로 설정
-                # inputs = np.concatenate([s, np.array([a])])
-                # r = cls.reward_model.r_hat_batch(inputs)[0]
+                inputs = np.concatenate([s, np.array([a])])
+                r = cls.reward_model.r_hat(inputs)[0][0]
                 done_mask = 0.0 if done else 1.0
 
                 # data 생성할 때만 사용
@@ -93,7 +92,7 @@ class PBRL:
                 cls.train(q, q_target, memory, optimizer)
 
             if n_epi % print_interval == 0 and n_epi != 0:
-                print("# of episode :{}, avg score : {:.1f}".format(n_epi, score / print_interval))
+                print("# of episode :{}, avg score : {:.1f} eps : {:.3f}".format(n_epi, score / print_interval, epsilon))
                 score = 0.0
 
         # 결과 및 파라미터 저장
@@ -135,7 +134,7 @@ class PBRL:
             a = q.sample_action(torch.from_numpy(s).float(), 0)
             s_prime, r, done = env.step(a)  # r은 그냥 0으로 설정
             inputs = np.concatenate([s, np.array([a])])
-            r = cls.reward_model.r_hat_batch(inputs)[0]
+            r = cls.reward_model.r_hat(inputs)[0]
             done_mask = 0.0 if done else 1.0
             # data 생성할 때만 사용
             s = s_prime
@@ -150,18 +149,20 @@ class PBRL:
         Learn reward
         :return:
         """
+        cls.load_reward_model()
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
-        sa_t_1 = df.iloc[:, 0:5].to_numpy().reshape(-1, 3, 5)
-        sa_t_2 = df.iloc[:, 5:10].to_numpy().reshape(-1, 3, 5)
-        labels = df.iloc[:, 10:12].to_numpy()[::3, :]
+        sa_t_1 = df.iloc[:, 0:5].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        sa_t_2 = df.iloc[:, 5:10].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        labels = df.iloc[:, 11:12].to_numpy()[::3]
         # buffer에 넣어줘야 함.
-        cls.reward_model.put_queries(sa_t_1, sa_t_2, labels)
+
         for epoch in range(Hyperparameters.reward_update):
-            train_acc = cls.reward_model.train_reward()
+            train_acc = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
 
             if train_acc > 0.97:
                 break
+        cls.save_reward_model()
 
         print("Reward function is updated!! ACC: " + str(train_acc))
 

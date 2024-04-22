@@ -18,8 +18,8 @@ from src.common.pathConfig import *
 app = dash.Dash(__name__)
 
 prev_clicks_A, prev_clicks_B, prev_clicks_draw, counts = 0.0, 0.0, 0.0, 0
-categories = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"]
-sample_size = Hyperparameters.size_trajectory
+categories = ["M10", "M9", "M8", "M7", "M6", "M5", "M4", "M3", "M2", "M1"]
+size_sample_action = Hyperparameters.size_sample_action
 # 레이아웃 설정
 app.layout = html.Div([
     dcc.Graph(id='graph1', style={'display': 'inline-block'}),
@@ -49,8 +49,9 @@ app.layout = html.Div([
      Input('button_win_B', 'n_clicks'),
      Input('button_draw', 'n_clicks'), ]
 )
+
 def update_graph(n_clicks_A, n_clicks_B, n_clicks_draw):
-    global prev_clicks_A, prev_clicks_B, prev_clicks_draw, categories, sample_size
+    global prev_clicks_A, prev_clicks_B, prev_clicks_draw, categories, size_sample_action
 
     prev_clicks_draw = n_clicks_draw - prev_clicks_draw
     label_A, label_B = n_clicks_A - prev_clicks_A + prev_clicks_draw / 2, n_clicks_B - prev_clicks_B + prev_clicks_draw / 2
@@ -60,11 +61,11 @@ def update_graph(n_clicks_A, n_clicks_B, n_clicks_draw):
     Simulator.reset(Parameters.datasetId)
     num = random.sample(range(0, Hyperparameters.episode), 2)
     df1 = pd.read_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{num[0]}.csv", index_col=0)
-    lower_bound = random.randint(10, len(df1) - sample_size)
-    higher_bound = lower_bound + sample_size
+    lower_bound = random.randint(10, len(df1) - size_sample_action)
+    higher_bound = lower_bound + size_sample_action
     df1 = df1.iloc[:higher_bound]
-    df1['Traj'] = ['old'] * lower_bound + ['new'] * sample_size
-    traj1 = df1.iloc[lower_bound:higher_bound, [0, 1, 2, 3, 4]]
+    df1['sample_action'] = [False] * lower_bound + [True] * size_sample_action
+    sample_action1 = df1.iloc[lower_bound:higher_bound, [0, 1, 2, 3, 4]]
     for i in range(len(df1)):
         Simulator.step3(df1.iloc[i, [4, 5]])
     fig1 = GanttChart.csv_to_gantt_chart() # action 부분만 indexing 함
@@ -81,12 +82,12 @@ def update_graph(n_clicks_A, n_clicks_B, n_clicks_draw):
     # 데이터 불러서 sample labeling 작업 수행함
     df2 = pd.read_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{num[1]}.csv", index_col=0)
     lower_bound = lower_bound + random.randint(-5, 5)
-    lower_bound = lower_bound if lower_bound <= len(df2) - sample_size -1 else len(df2) - sample_size -1
+    lower_bound = lower_bound if lower_bound <= len(df2) - size_sample_action -1 else len(df2) - size_sample_action -1
     lower_bound = lower_bound if lower_bound >= 10 else 10
-    higher_bound = lower_bound + sample_size
+    higher_bound = lower_bound + size_sample_action
     df2 = df2.iloc[:higher_bound]
-    df2['Traj'] = ['old'] * lower_bound + ['new'] * sample_size
-    traj2 = df2.iloc[lower_bound:higher_bound, [0, 1, 2, 3, 4]]
+    df2['sample_action'] = [False] * lower_bound + [True] * size_sample_action
+    sample_action2 = df2.iloc[lower_bound:higher_bound, [0, 1, 2, 3, 4]]
     for i in range(len(df2)):
         Simulator.step3(df2.iloc[i, [4, 5]])
     fig2 = GanttChart.csv_to_gantt_chart() # action 부분만 indexing 함
@@ -101,9 +102,9 @@ def update_graph(n_clicks_A, n_clicks_B, n_clicks_draw):
         if os.path.exists(file_path):
             df = pd.read_csv(file_path, index_col=0)
         else:
-            df = pd.DataFrame([], columns=[str(k) for k in range(12)])
-        for i in range(sample_size):
-            new_df = pd.DataFrame([*traj1.iloc[i], *traj2.iloc[i], label_A, label_B]).T
+            df = pd.DataFrame([], columns=[str(k) for k in range(len(df1) + 2)])
+        for i in range(size_sample_action):
+            new_df = pd.DataFrame([*sample_action1.iloc[i], *sample_action2.iloc[i], label_A, label_B]).T
             new_df.columns = [str(j) for j in range(12)]
             df = pd.concat([df, new_df], axis = 0)
         df.to_csv(f"{pathConfig.labeled_data_path}{os.sep}labeled_data.csv", index=True)

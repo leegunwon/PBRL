@@ -9,7 +9,7 @@ from src.learner.common.Hyperparameters import *
 class GanttChart:
     gantt_on = Parameters.gantt_on
     gantt_history = pd.DataFrame([], columns=['Type', 'JOB_ID', 'Task', 'Start', 'Finish', 'Resource', 'Rule', 'Step',
-                                              'Q_diff', 'Traj'])
+                                              'Q_diff', 'sample_action'])
     step = 0
     color_by_color_mapper = {'j01': '#FFDDEE', 'j02': '#EEDDFF',
                              'j03': '#FFFFDD', 'j04': '#DDF9FF',
@@ -34,11 +34,11 @@ class GanttChart:
         cls.gantt_history = pd.DataFrame([],
                                          columns=['Type', 'JOB_ID', 'Task', 'Start', 'Finish', 'Resource', 'Rule',
                                                   'Step',
-                                                  'Q_diff', 'Traj'])
+                                                  'Q_diff', 'sample_action'])
         cls.step = 0
 
     @classmethod
-    def save_histories(cls, event_type, job_id, jop, start, end, machine_id, rule, step, q_time_diff, traj):
+    def save_histories(cls, event_type, job_id, jop, start, end, machine_id, rule, step, q_time_diff, sample_action):
         cls.gantt_history.loc[cls.step] = dict(
             Type=event_type,
             JOB_ID=job_id,
@@ -49,7 +49,7 @@ class GanttChart:
             Rule=rule,
             Step=step,
             Q_diff=q_time_diff,
-            Traj=traj
+            sample_action=sample_action
         )  # 간트차트를 위한 딕셔너리 생성, 데이터프레임에 집어넣음
 
         cls.step += 1
@@ -280,12 +280,11 @@ class GanttChart:
         """
         cls.gantt_history = cls.gantt_history.sort_values(by='Resource')
         df = cls.gantt_history
-        # df_base['Traj'] = ['old' if step <= lower_bound else 'new' for step in df['Step']]
 
         fig_csv = px.timeline(df, x_start="Start", x_end="Finish", y="Resource",
                               color="Type", color_discrete_map=cls.color_by_color_mapper, width=2000,
                               height=800,
-                              pattern_shape="Traj", pattern_shape_map={"old": "", "new": "/"})
+                              pattern_shape="sample_action", pattern_shape_map={False: "", True: "/"})
 
         [(cls.modify_width(bar, 0.7), cls.modify_text(bar), (cls.modify_color(bar)))
          for bar in fig_csv.data if ('setup' in bar.legendgroup)]

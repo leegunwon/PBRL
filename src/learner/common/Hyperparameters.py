@@ -16,7 +16,7 @@ class Hyperparameters:
     ds = 4
     da = 1
     ensemble_size = 3
-    size_trajectory = 3
+    size_sample_action = 3
     max_size = 1000
     activation = 'tanh'
     reward_lr = 0.001

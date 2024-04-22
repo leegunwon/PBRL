@@ -43,7 +43,7 @@ class SimpleNN(nn.Module):
 
 class RewardModel:
     def __init__(self, ds, da,
-                 ensemble_size=3, lr=3e-4, size_trajectory=1,
+                 ensemble_size=3, lr=3e-4, size_sample_action=1,
                  max_size=1000, activation='tanh', capacity=5e5):
 
         self.ds = ds  # 상태의 차원
@@ -56,14 +56,14 @@ class RewardModel:
         self.model = None  # 모델
         self.max_size = max_size  # 버퍼의 최대 크기
         self.activation = activation  # 활성화 함수
-        self.size_trajectory = size_trajectory  # 세그먼트의 크기
+        self.size_sample_action = size_sample_action  # 세그먼트의 크기
 
         self.capacity = int(capacity)  # 버퍼의 용량
-        self.buffer_seg1 = np.empty((self.capacity, size_trajectory, self.ds + self.da),
+        self.buffer_seg1 = np.empty((self.capacity, size_sample_action, self.ds + self.da),
                                     dtype=np.float32)  # 첫 번째 세그먼트 버퍼
-        self.buffer_seg2 = np.empty((self.capacity, size_trajectory, self.ds + self.da),
+        self.buffer_seg2 = np.empty((self.capacity, size_sample_action, self.ds + self.da),
                                     dtype=np.float32)  # 두 번째 세그먼트 버퍼
-        self.buffer_label = np.empty((self.capacity, 2), dtype=np.float32)  # 레이블 버퍼
+        self.buffer_label = np.empty((self.capacity, 1), dtype=np.float32)  # 레이블 버퍼
         self.buffer_index = 0  # 버퍼 인덱스
         self.buffer_full = False  # 버퍼가 가득 찼는지 여부
 
@@ -80,7 +80,7 @@ class RewardModel:
         de : 사용할 앙상블 뉴럴넷 갯수
         """
 
-        self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=128, output_size=1)
+        self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=256, output_size=1)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
     def add_data(self, obs, act, done):
@@ -121,24 +121,16 @@ class RewardModel:
                 self.inputs[-1] = np.concatenate([self.inputs[-1], flat_input])
 
     def data_save(self):
-        for i in range(len(self.inputs)):
+        for i in range(len(self.inputs)-1000, len(self.inputs)):
             df = pd.DataFrame(self.inputs[i])
-            df.to_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{i}.csv", index=True)
+            df.to_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{i- len(self.inputs)}.csv", index=True)
 
     def r_hat_model(self, x):
         # the network parameterizes r hat in eqn 1 from the paper
         return self.model(torch.from_numpy(x).float().to(device))
 
-    def r_hat(self, x):
-        # they say they average the rewards from each member of the ensemble, but I think this only makes sense if the rewards are already normalized
-        # but I don't understand how the normalization should be happening right now :(
-        r_hats = []
-        for member in range(self.de):
-            r_hats.append(self.r_hat_model(x).detach().cpu().numpy())
-        r_hats = np.array(r_hats)
-        return np.mean(r_hats)
 
-    def r_hat_batch(self, x):
+    def r_hat(self, x):
         # they say they average the rewards from each member of the ensemble, but I think this only makes sense if the rewards are already normalized
         # but I don't understand how the normalization should be happening right now :(
         r_hats = []
@@ -233,7 +225,7 @@ class RewardModel:
             # self.put_queries(sa_t_1, sa_t_2, labels)
         # return len(labels)
         return 10
-    def train_reward(self):
+    def train_reward(self, sa_t_1, sa_t_2, labels):
         """
         train reward model
         사용 방법 seg1 buffer와 seg2 buffer를 채워둔 후
@@ -242,7 +234,8 @@ class RewardModel:
         # ensemble의 loss들을 저장한 모양
 
         # max_len : buffer가 채워져 있는 만큼
-        max_len = self.capacity if self.buffer_full else self.buffer_index
+        correct = 0
+        max_len = len(labels)
         # 총
         total_batch_index = np.random.permutation(max_len)
             # 0 ~ max_len -1 사이의 리스트를 [0, 1, ... max_len-1] 랜덤으로 섞음.
@@ -264,14 +257,14 @@ class RewardModel:
                 # get random batch
                 # total_batch_index에서 랜덤한 index를 추출한다.
             idxs = total_batch_index[epoch * self.train_batch_size:last_index]
-            sa_t_1 = self.buffer_seg1[idxs]
-            sa_t_2 = self.buffer_seg2[idxs]
-            labels = self.buffer_label[idxs]
+            sa_t_1_t = sa_t_1[idxs]
+            sa_t_2_t = sa_t_2[idxs]
+            labels_t = labels[idxs]
 
             # get logits
             # 각각의 상태-액션 쌍의 보상 값을 계산함 (앙상블의 보상 값들을 같이 구해서 평균을 구함)
-            r_hat1 = self.r_hat_model(sa_t_1)
-            r_hat2 = self.r_hat_model(sa_t_2)
+            r_hat1 = self.r_hat_model(sa_t_1_t)
+            r_hat2 = self.r_hat_model(sa_t_2_t)
             # axis=1 이므로 행을 기준으로 합 계산.
             r_hat1 = r_hat1.sum(axis=1)
             r_hat2 = r_hat2.sum(axis=1)
@@ -280,13 +273,13 @@ class RewardModel:
             #            [3, 4]])             [7, 8]])                            [3, 4, 7, 8]])
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
-            curr_loss = self.CEloss(r_hat, torch.tensor(labels[:, 1]).long())
+            curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
             loss += curr_loss
             # 현재 계산된 curr_loss 값을 int로 변환하여 저장
             curr_loss.item()
             # compute acc
             _, predicted = torch.max(r_hat.data, 1)
-            correct = (predicted == torch.tensor(labels[:, 1])).sum().item()
+            correct += (predicted.reshape(-1, 1) == torch.tensor(labels_t)).sum().item()
             accuracy = correct / len(labels)
 
             loss.backward()
