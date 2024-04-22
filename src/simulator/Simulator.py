@@ -577,7 +577,7 @@ class Simulator:
                 GanttChart.save_histories(e.job.job_type, e.job.id, e.jop, datetime.fromtimestamp(e.start_time * 3600),
                                           datetime.fromtimestamp(e.end_time * 3600), e.machine.id, e.rule_name,
                                           e.step_num,
-                                          0, "old")
+                                          0, False)
         cls.pre_set = True
 
 
