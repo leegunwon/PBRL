@@ -89,7 +89,7 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset
     # algorithm : reward_model, dqn, PBRL
-    simulator.main("labeling", "reward_model")  # dsp_rule = 개별 확인할 때만 사용하면 됨
+    simulator.main("learning", "PBRL")  # dsp_rule = 개별 확인할 때만 사용하면 됨
 
 # gantt chart 쑬 것인지
 # 학습 방법, kpi목표
