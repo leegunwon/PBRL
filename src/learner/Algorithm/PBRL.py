@@ -57,17 +57,16 @@ class PBRL:
         print_interval = 20
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
 
-        save_directory = f"{pathConfig.model_save_path}"
+        save_directory = f"{pathConfig.reward_model_params_path}"
         # model load
         if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
             params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
             q.load_state_dict(params)
 
         for n_epi in range(Hyperparameters.episode):
-            epsilon = max(0.01, 0.8 - 0.0001 * n_epi)
+            epsilon = max(0.01, 0.8 - 0.001 * n_epi)
             s = env.reset(Parameters.datasetId)
             done = False
-            score = 0.0
             while not done:
                 if (Hyperparameters.mode == 1):
                     a = random.randint(0, len(Hyperparameters.action_list) - 1)
@@ -121,7 +120,7 @@ class PBRL:
         q_target.load_state_dict(q.state_dict())
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
         score = 0.0
-        save_directory = f"{pathConfig.model_save_path}"
+        save_directory = f"{pathConfig.reward_model_params_path}"
         # model load
         if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
             params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
@@ -152,14 +151,14 @@ class PBRL:
         cls.load_reward_model()
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
-        sa_t_1 = df.iloc[:, 0:5].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
-        sa_t_2 = df.iloc[:, 5:10].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
-        labels = df.iloc[:, 11:12].to_numpy()[::3]
+        sa_t_1 = df.iloc[:, 0:23].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        sa_t_2 = df.iloc[:, 23:46].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        labels = df.iloc[:, 46].to_numpy()[::3]
         # buffer에 넣어줘야 함.
 
         for epoch in range(Hyperparameters.reward_update):
             train_acc = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-
+            print(train_acc)
             if train_acc > 0.97:
                 break
         cls.save_reward_model()

@@ -13,9 +13,9 @@ hyperparameter:
   learning_rate: 0.0001
   batch_size: 32
   buffer_limit: 50000
-  input_layer: 4
+  input_layer: 22
   output_layer: 1
-  episode: 10000
+  episode: 1000
 
 
 configRL:

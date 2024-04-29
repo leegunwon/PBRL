@@ -6,14 +6,14 @@ class Hyperparameters:
     learning_rate = 0.0001
     batch_size = 32
     buffer_limit = 50000
-    input_layer = 4
+    input_layer = 22
     output_layer = 1
     episode = 1000
     exploration_episode = 10
     action_list = ["SPTSSU", "SSU", "EDD", "MST", "FIFO", "LIFO"]
 
-    # state_type default:8 simple:4
-    ds = 4
+    # state_type default:8 simple:22
+    ds = 22
     da = 1
     ensemble_size = 3
     size_sample_action = 3
@@ -82,4 +82,4 @@ class Hyperparameters:
         elif cls.state_type == 'cnn_state':
             cls.input_layer = 29
         elif cls.state_type == 'simple_state':
-            cls.input_layer = 4
+            cls.input_layer = 22

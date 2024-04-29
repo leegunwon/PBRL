@@ -40,6 +40,7 @@ class Simulator:
     step_number = 0
     event_list = []
     j = 0
+    setup_change_counts = 0
 
     process_number = 0
 
@@ -114,6 +115,7 @@ class Simulator:
         cls.step_number = 0
         cls.event_list = []
         cls.pre_set = False
+        cls.setup_change_counts = 0
 
         with open(f'data_lot_machine_{cls.dataSetId[0]}.pkl', 'rb') as file:
             loaded_df_list = pickle.load(file)
@@ -126,7 +128,7 @@ class Simulator:
         cls.event_list.append(e)
         cls.get_demand_by_planhorizon()
         s = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
-                                   cls.demand_by_planhorizon, cls.oper_in_list)
+                                   cls.demand_by_planhorizon, cls.oper_in_list, cls.setup_change_counts)
         cls.observation_space = s.size
 
         cls.lot_categorize()
@@ -191,7 +193,7 @@ class Simulator:
                     cls.process_event()
                     if cls.plan_finish == True:
                         s_prime = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
-                                                         cls.demand_by_planhorizon, cls.oper_in_list)
+                                                         cls.demand_by_planhorizon, cls.oper_in_list, cls.setup_change_counts)
                         r = 0
                         done = True
                         break
@@ -206,7 +208,7 @@ class Simulator:
                 cls.update_bucket(candidate)
 
                 s_prime = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
-                                                 cls.demand_by_planhorizon, cls.oper_in_list)
+                                                 cls.demand_by_planhorizon, cls.oper_in_list, cls.setup_change_counts)
                 cls.get_event(candidate, machineId, rule_name)
                 # print(cls.event_list)
                 break
@@ -359,6 +361,7 @@ class Simulator:
                 if event.event_type == "setup_change":
                     event_type = "setup"
                     event.machine.complete_setting(event.start_time, event.end_time, event.event_type)  # 기계도 사용가능하도록 변함
+                    cls.setup_change_counts += 1
                 elif event.event_type == "NOTHING":
                     event_type = "NOTHING"
             else:

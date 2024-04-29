@@ -1,12 +1,14 @@
 import numpy as np
+import pandas as pd
+import re
 from src.Object.Lot import *
 from src.learner.common.Hyperparameters import *
-import pandas as pd
+
 class StateManager:
     state_time = 0
 
     @classmethod
-    def get_state(cls, j_list, r_list, cur_runtime, number_of_job, bucket, oper_in_list):
+    def get_state(cls, j_list, r_list, cur_runtime, number_of_job, bucket, oper_in_list, setup_change_counts):
         if Hyperparameters.state_type == "state_12":
             s = cls.set_state_12(j_list, r_list, cur_runtime)
         elif Hyperparameters.state_type == "state_36":
@@ -20,7 +22,7 @@ class StateManager:
         elif Hyperparameters.state_type == 'default_state':
             s = cls.set_state_default(j_list, r_list, cur_runtime)
         elif Hyperparameters.state_type == 'simple_state':
-            s = cls.set_state_simple(j_list, r_list, cur_runtime)
+            s = cls.set_state_simple(j_list, r_list, cur_runtime, setup_change_counts)
 
         return s
 
@@ -295,54 +297,42 @@ class StateManager:
         return s
 
     @classmethod
-    def set_state_simple(cls, j_list, r_list, curr_time):
-        # 대기 중인 작업의 평균 지연 시간 (total_tardiness / number_of_jobs_wait): 대기 중인 작업의 지연 시간의 평균입니다. 단, 대기 중인 작업이 없을 경우 0을 추가합니다.
-        # 대기 중인 작업의 평균 흐름 시간 (total_flow_time / number_of_jobs_wait): 대기 중인 작업의 흐름 시간의 평균입니다. 흐름 시간은 작업이 시작된 후 현재 시간까지의 경과 시간입니다. 대기 중인 작업이 없으면 0을 추가합니다.
-        # 기계별 예약 시간 차이의 평균 (total_reservation_time_diff / len(r_list)): 모든 기계에 대한 예약 시간과 현재 시간의 차이의 평균입니다.
-        # 작업 완료 비율 (number_of_job_done/len(j_list)): 전체 작업 중에서 완료된 작업의 비율입니다.
-
-        s = []
-        number_of_jobs_wait = 0  # clear
-        number_of_jobs_load = 0  # clear
-        total_tardiness = 0
-        total_flow_time = 0
-        number_of_job_done = 0  # clear
-
-        total_job_tardiness_done = 0  # clear
-        total_job_q_time_over_done = 0  # clear
-        for job in j_list:  # job 이름과 operation이름 찾기
-            if j_list[job].status == "WAIT":
-                number_of_jobs_wait += 1
-                total_tardiness += j_list[job].cal_tardiness(curr_time)
-                total_flow_time += j_list[job].cal_flowtime(curr_time)
-            elif j_list[job].status == "PROCESSING":
-                number_of_jobs_load += 1
-            elif j_list[job].status == "DONE":
-                number_of_job_done += 1
-                total_job_tardiness_done += j_list[job].tardiness_time
-
-        current_time = curr_time
-        total_reservation_time_diff = 0
-        max_reservation_time = 0
-        for machine in r_list:
-            total_reservation_time_diff += r_list[machine].reservation_time - current_time
-            if max_reservation_time > r_list[machine].reservation_time:
-                max_reservation_time = r_list[machine].reservation_time
-
-        if number_of_jobs_wait == 0:
-            for _ in range(2):
-                s.append(0)
+    def set_action_masking_state(cls, j_list, r_list, cur_time, number_of_job_type):
+        cls.state_time = cur_time
+    @classmethod
+    def change_job_type_to_num(cls, job_type):
+        if re.search(r'j01', job_type):
+            job_type_num = 1
+        elif re.search(r'j02', job_type):
+            job_type_num = 2
+        elif re.search(r'j03', job_type):
+            job_type_num = 3
+        elif re.search(r'j04', job_type):
+            job_type_num = 4
+        elif re.search(r'j05', job_type):
+            job_type_num = 5
         else:
-            s.append(total_tardiness / number_of_jobs_wait)
-            s.append(total_flow_time / number_of_jobs_wait)
-        s.append(total_reservation_time_diff / len(r_list))
+            job_type_num = 0
+        return job_type_num
+
+    @classmethod
+    def set_state_simple(cls, j_list, r_list, curr_time, setup_change_counts):
+        # 각 머신에 할당되어 있는 lot의 종료 시간
+        s = []
+        number_of_job_done = 0
+
+        for machine in r_list:
+            s.append(r_list[machine].reservation_time)
+            s.append(cls.change_job_type_to_num(r_list[machine].setup_status))
+
+        for job in j_list:  # job 이름과 operation이름 찾기
+            if j_list[job].status == "DONE":
+                number_of_job_done += 1
+
         s.append(number_of_job_done / len(j_list))
+        s.append(setup_change_counts)
 
         df = pd.Series(s)
         s = df.to_numpy()
 
         return s
-
-    @classmethod
-    def set_action_masking_state(cls, j_list, r_list, cur_time, number_of_job_type):
-        cls.state_time = cur_time

@@ -72,7 +72,7 @@ class RewardModel:
         self.train_batch_size = 128  # 학습 미니배치 크기
         self.CEloss = nn.CrossEntropyLoss()  # 교차 엔트로피 손실 함수
 
-        self.count = 0 #
+        self.count = 0
 
     def construct_model(self):
         """
@@ -121,9 +121,9 @@ class RewardModel:
                 self.inputs[-1] = np.concatenate([self.inputs[-1], flat_input])
 
     def data_save(self):
-        for i in range(len(self.inputs)-1000, len(self.inputs)):
+        for i in range(len(self.inputs)):
             df = pd.DataFrame(self.inputs[i])
-            df.to_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{i- len(self.inputs)}.csv", index=True)
+            df.to_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{i}.csv", index=True)
 
     def r_hat_model(self, x):
         # the network parameterizes r hat in eqn 1 from the paper
@@ -236,6 +236,7 @@ class RewardModel:
         # max_len : buffer가 채워져 있는 만큼
         correct = 0
         max_len = len(labels)
+        filtered_labels_len = 0
         # 총
         total_batch_index = np.random.permutation(max_len)
             # 0 ~ max_len -1 사이의 리스트를 [0, 1, ... max_len-1] 랜덤으로 섞음.
@@ -279,8 +280,15 @@ class RewardModel:
             curr_loss.item()
             # compute acc
             _, predicted = torch.max(r_hat.data, 1)
-            correct += (predicted.reshape(-1, 1) == torch.tensor(labels_t)).sum().item()
-            accuracy = correct / len(labels)
+            labels_t = torch.tensor(labels_t).flatten().int()
+            for idx in range(len(labels_t)):
+                label = labels_t[idx]
+                if label != 0.5:
+                    filtered_labels_len += 1
+                    if label == predicted[idx]:
+                        correct += 1
+
+            accuracy = correct / filtered_labels_len
 
             loss.backward()
             self.opt.step()
