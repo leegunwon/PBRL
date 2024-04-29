@@ -324,7 +324,6 @@ class StateManager:
         for machine in r_list:
             s.append(r_list[machine].reservation_time)
             s.append(cls.change_job_type_to_num(r_list[machine].setup_status))
-
         for job in j_list:  # job 이름과 operation이름 찾기
             if j_list[job].status == "DONE":
                 number_of_job_done += 1

@@ -10,7 +10,7 @@ database:
 
 hyperparameter:
   gamma: 0.99
-  learning_rate: 0.0001
+  learning_rate: 0.001
   batch_size: 32
   buffer_limit: 50000
   input_layer: 22
@@ -21,7 +21,7 @@ hyperparameter:
 configRL:
   state_type: simple_state  # state_12, state_36, cnn, cnn_state
   action_type: dsp_rule          #
-  reward_type: util          # makespan, rtf
+  reward_type: rtf          # makespan, rtf, combination_reward_q_over_time_and_makespan
 
 engine:
   gantt_on_check: True  # 간트생성 on/off

@@ -7,6 +7,7 @@ from src.learner.Algorithm.PBRL import PBRL
 from src.learner.common.Hyperparameters import *
 from src.save_data.data_generator.compare_chart import *
 from src.simulator.GanttChart import *
+from src.save_data.data_generator.data_generator import *
 import plotly
 import yaml
 import logging
@@ -68,28 +69,23 @@ class Run_Simulator:
                 DQN.get_result(f"{pathConfig.model_save_path}{os.sep}240209_233447{os.sep}24param.pt", ["sks_train_1"])
 
         elif mode == "make_dataset":
-            # 파라미터화 해야함
-            # to_do_list
-            # 기존의 counts를 하나씩 늘리고 20개 30개가 되면 저장하는 느낌
-            # 기존 문제는 한 개의 트레젝토리가 너무 커져서 학습을 시킬 때 상벌이 애매함
-            # 판단이 어려움
-            # 새로운 트레젝토리
-            # 전체 simulation 결과를 저장을 함
-            # trajectory len을 하이퍼 파라미터로 설정하여 trajectory len 만큼의 action이 수행된 결과를 출력
-            # 랜덤으로 시점을 설정하여 의사결정을 수행함.
-            # 범위는 초반 dispatching을 수행한 후 부터 마지막 결정 - trajectory len 만큼
             Hyperparameters.mode = 1
             PBRL.main()
 
         elif mode == "labeling":
             app_run()
 
+        elif mode == "label_generator":
+            for i in range(2000):
+                generate_label()
+
+
 
 if True:
     simulator = Run_Simulator()
-    # mode : labeling, evaluate, learning, result, make_dataset
+    # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    simulator.main("learning", "PBRL")  # dsp_rule = 개별 확인할 때만 사용하면 됨
+    simulator.main("label_generator", "reward_model")  # dsp_rule = 개별 확인할 때만 사용하면 됨
 
 # gantt chart 쑬 것인지
 # 학습 방법, kpi목표

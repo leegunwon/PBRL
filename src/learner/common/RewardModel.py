@@ -31,12 +31,14 @@ class SimpleNN(nn.Module):
         super(SimpleNN, self).__init__()
         self.layer1 = nn.Linear(input_size, hidden_size)
         self.layer2 = nn.Linear(hidden_size, hidden_size)
-        self.layer3 = nn.Linear(hidden_size, output_size)
+        self.layer3 = nn.Linear(hidden_size, hidden_size)
+        self.layer4 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
-        x = self.layer3(x)  # 직접적인 선형 변환 결과를 반환
+        x = F.relu(self.layer3(x))
+        x = self.layer4(x)  # 직접적인 선형 변환 결과를 반환
         return x
 
 
@@ -80,7 +82,7 @@ class RewardModel:
         de : 사용할 앙상블 뉴럴넷 갯수
         """
 
-        self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=256, output_size=1)
+        self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=128, output_size=1)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
     def add_data(self, obs, act, done):

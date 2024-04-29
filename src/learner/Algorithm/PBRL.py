@@ -55,6 +55,10 @@ class PBRL:
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
         score = 0.0
         print_interval = 20
+        makespan_list = []
+        q_over_time_list = []
+        score_list = []
+
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
 
         save_directory = f"{pathConfig.reward_model_params_path}"
@@ -67,6 +71,7 @@ class PBRL:
             epsilon = max(0.01, 0.8 - 0.001 * n_epi)
             s = env.reset(Parameters.datasetId)
             done = False
+            score = 0.0
             while not done:
                 if (Hyperparameters.mode == 1):
                     a = random.randint(0, len(Hyperparameters.action_list) - 1)
@@ -90,9 +95,9 @@ class PBRL:
             if (memory.size() > 100 and Hyperparameters.mode == 4):
                 cls.train(q, q_target, memory, optimizer)
 
-            if n_epi % print_interval == 0 and n_epi != 0:
-                print("# of episode :{}, avg score : {:.1f} eps : {:.3f}".format(n_epi, score / print_interval, epsilon))
-                score = 0.0
+            makespan_list, q_over_time_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
+                                                                                 False, makespan_list, q_over_time_list,
+                                                                                 score_list)
 
         # 결과 및 파라미터 저장
         params = q.state_dict()
@@ -170,10 +175,8 @@ class PBRL:
         Flow_time, machine_util, util, makespan, Tardiness_time, Lateness_time, T_max, q_time_true, q_time_false, q_job_t, q_job_f, q_over_time, rtf = env.performance_measure()
 
         output_string = "--------------------------------------------------\n" + \
-                        f"flow time: {Flow_time}, util : {util:.3f}, makespan : {makespan}, rtf: {rtf}\n" + \
-                        f"Tardiness: {Tardiness_time}, Lateness : {Lateness_time}, T_max : {T_max}\n" + \
-                        f"q_true_op: {q_time_true}, q_false_op : {q_time_false}, q_true_job : {q_job_t}, q_false_job : {q_job_f}, q_over_time : {q_over_time}\n" + \
-                        f"n_episode: {n_epi}, score : {score:.1f}, n_buffer : {memory.size()}, eps : {epsilon * 100:.1f}%"
+                        f"util : {util:.3f}\n" + \
+                        f"n_episode: {n_epi}, score : {score:.1f}, eps : {epsilon * 100:.1f}%"
         print(output_string)
         if type:
             makespan_list.append(makespan)

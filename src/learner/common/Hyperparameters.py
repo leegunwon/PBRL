@@ -21,7 +21,7 @@ class Hyperparameters:
     activation = 'tanh'
     reward_lr = 0.001
     reward_batch = 128
-    reward_update = 10000
+    reward_update = 40000
     reset_update: 100
     topK: 5
     mode = 4
