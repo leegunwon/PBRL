@@ -40,7 +40,9 @@ class Simulator:
     step_number = 0
     event_list = []
     j = 0
+    # PBRL param
     setup_change_counts = 0
+    sample_setup_times = 0
 
     process_number = 0
 
@@ -115,7 +117,9 @@ class Simulator:
         cls.step_number = 0
         cls.event_list = []
         cls.pre_set = False
+        # PBRL params
         cls.setup_change_counts = 0
+        cls.sample_setup_times = 0
 
         with open(f'data_lot_machine_{cls.dataSetId[0]}.pkl', 'rb') as file:
             loaded_df_list = pickle.load(file)
@@ -263,6 +267,34 @@ class Simulator:
         """
         if cls.pre_set ==False:
             cls.pre_setting()
+        while True:
+            machineId = cls.select_machine()
+            if machineId == "NONE":
+                # 이벤트도 비워져 있고, #job들도 다 done이면 종료
+                if len(cls.event_list) == 0 and all(cls.lot_list[job].status == "DONE" for job in cls.lot_list):
+                    break
+                else:
+                    # 머신이 비워져 있지만 에피소드가 끝나지 않았을 경우 event를 진행시킨다.
+                    cls.process_event_ver_pbrl()
+                    if cls.plan_finish == True:
+                        cls.plan_finish = False
+                        break
+            else:
+                candidate_list = cls.get_candidate(machineId)
+                # action을 정해서 함수에 넣으면 action에 해당하는 dsp_rule로 simulate을 하고 결과를 반환함
+                rule_name, candidate = ActionManager.get_lot(candidate_list, int(inputs[0]), cls.runtime)
+                # reward 함수를 통해 reward 계산
+                cls.update_bucket(candidate)
+                cls.get_event_PBRL(candidate, machineId, rule_name, inputs[1])
+                break
+    @classmethod
+    def step4(cls, inputs):
+        """
+
+        :param inputs: action, [sample action]
+        :return:
+        """
+
         while True:
             machineId = cls.select_machine()
             if machineId == "NONE":
@@ -660,6 +692,8 @@ class Simulator:
         GanttChart.save_histories(e.job.job_type, e.job.id, e.jop, datetime.fromtimestamp(e.start_time * 3600),
                                   datetime.fromtimestamp(e.end_time * 3600), e.machine.id, e.rule_name, e.step_num,
                                   q_time_diff, sample_label)
+        if sample_label == True:
+            cls.sample_setup_times += setup_time
 
         cls.step_number += 1
 

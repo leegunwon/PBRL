@@ -302,17 +302,17 @@ class StateManager:
     @classmethod
     def change_job_type_to_num(cls, job_type):
         if re.search(r'j01', job_type):
-            job_type_num = 1
+            job_type_num = [0, 0, 1]
         elif re.search(r'j02', job_type):
-            job_type_num = 2
+            job_type_num = [0, 1, 0]
         elif re.search(r'j03', job_type):
-            job_type_num = 3
+            job_type_num = [0, 1, 1]
         elif re.search(r'j04', job_type):
-            job_type_num = 4
+            job_type_num = [1, 0, 0]
         elif re.search(r'j05', job_type):
-            job_type_num = 5
+            job_type_num = [1, 0, 1]
         else:
-            job_type_num = 0
+            job_type_num = [0, 0, 0]
         return job_type_num
 
     @classmethod
@@ -323,13 +323,17 @@ class StateManager:
 
         for machine in r_list:
             s.append(r_list[machine].reservation_time)
-            s.append(cls.change_job_type_to_num(r_list[machine].setup_status))
+        max_time = max(s)
+        for i in range(len(s)):
+            s[i] = s[i] / max_time
+        for machine in r_list:
+            s += cls.change_job_type_to_num(r_list[machine].setup_status)
         for job in j_list:  # job 이름과 operation이름 찾기
             if j_list[job].status == "DONE":
                 number_of_job_done += 1
 
         s.append(number_of_job_done / len(j_list))
-        s.append(setup_change_counts)
+        s.append((setup_change_counts + 1)/ (number_of_job_done + 1))
 
         df = pd.Series(s)
         s = df.to_numpy()

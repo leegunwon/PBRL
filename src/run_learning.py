@@ -76,8 +76,7 @@ class Run_Simulator:
             app_run()
 
         elif mode == "label_generator":
-            for i in range(2000):
-                generate_label()
+            generate_label()
 
 
 
@@ -85,7 +84,9 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    simulator.main("label_generator", "reward_model")  # dsp_rule = 개별 확인할 때만 사용하면 됨
+    simulator.main(mode="label_generator", algorithm="PBRL")  # dsp_rule = 개별 확인할 때만 사용하면 됨
+    simulator.main(mode="learning", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="PBRL")
 
 # gantt chart 쑬 것인지
 # 학습 방법, kpi목표

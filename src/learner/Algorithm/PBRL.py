@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import logging
-
+import plotly.graph_objects as go
 from src.common.Parameters import *
 from src.learner.common.ReplayBuffer import *
 from src.learner.common.RewardModel import RewardModel
@@ -58,10 +58,9 @@ class PBRL:
         makespan_list = []
         q_over_time_list = []
         score_list = []
-
+        util_list = []
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
-
-        save_directory = f"{pathConfig.reward_model_params_path}"
+        save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
         if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
             params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
@@ -95,8 +94,8 @@ class PBRL:
             if (memory.size() > 100 and Hyperparameters.mode == 4):
                 cls.train(q, q_target, memory, optimizer)
 
-            makespan_list, q_over_time_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
-                                                                                 False, makespan_list, q_over_time_list,
+            makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
+                                                                                 False, makespan_list, util_list,
                                                                                  score_list)
 
         # 결과 및 파라미터 저장
@@ -104,9 +103,10 @@ class PBRL:
         file_name = "q_net_param.pt"
         file_path = os.path.join(save_directory, file_name)
         torch.save(params, file_path)
-        if (Hyperparameters.mode == 1 or Hyperparameters.mode == 4):
-            cls.reward_model.data_save()
-
+        cls.reward_model.data_save()
+        fig = go.Figure([go.Scatter(x=range(1, len(util_list) - 1), y=util_list)])
+        fig.add_trace(go.Scatter(x=range(1, len(score_list) - 1), y=score_list))
+        fig.show()
         print("학습이 종료되었습니다")
 
     @classmethod
@@ -125,7 +125,7 @@ class PBRL:
         q_target.load_state_dict(q.state_dict())
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
         score = 0.0
-        save_directory = f"{pathConfig.reward_model_params_path}"
+        save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
         if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
             params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
@@ -156,36 +156,43 @@ class PBRL:
         cls.load_reward_model()
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
-        sa_t_1 = df.iloc[:, 0:23].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
-        sa_t_2 = df.iloc[:, 23:46].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
-        labels = df.iloc[:, 46].to_numpy()[::3]
+        sa_t_1 = df.iloc[:, 0:43].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        sa_t_2 = df.iloc[:, 43:86].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        labels = df.iloc[:, 86].to_numpy()[::3]
         # buffer에 넣어줘야 함.
-
+        acc_chart = []
+        max_acc = 0
         for epoch in range(Hyperparameters.reward_update):
             train_acc = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            print(train_acc)
+            train_acc = round(train_acc, 3)
+
+            if train_acc > max_acc:
+                max_acc = train_acc
+                cls.save_reward_model()
+            print(max_acc)
+            if (epoch%10) == 0:
+                acc_chart.append(train_acc)
             if train_acc > 0.97:
                 break
-        cls.save_reward_model()
+        fig = go.Figure(data=go.Scatter(x=list(range(1, len(acc_chart)+1)), y=acc_chart))
 
         print("Reward function is updated!! ACC: " + str(train_acc))
-
+        fig.show()
     @classmethod
-    def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, q_over_time_list, score_list):
+    def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, util_list, score_list):
         Flow_time, machine_util, util, makespan, Tardiness_time, Lateness_time, T_max, q_time_true, q_time_false, q_job_t, q_job_f, q_over_time, rtf = env.performance_measure()
-
         output_string = "--------------------------------------------------\n" + \
                         f"util : {util:.3f}\n" + \
                         f"n_episode: {n_epi}, score : {score:.1f}, eps : {epsilon * 100:.1f}%"
         print(output_string)
         if type:
             makespan_list.append(makespan)
-            q_over_time_list.append(q_over_time)
+            util_list.append(util)
             score_list.append(score)
         if Parameters.log_on:
             logging.info(f'performance :{output_string}')
 
-        return makespan_list, q_over_time_list, score_list
+        return makespan_list, util_list, score_list
     @classmethod
     def save_reward_model(cls):
         cls.reward_model.save(pathConfig.reward_model_params_path)
