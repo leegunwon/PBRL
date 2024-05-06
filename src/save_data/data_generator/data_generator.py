@@ -12,7 +12,7 @@ def generate_label():
     else:
         df = pd.DataFrame([], columns=[str(k) for k in range((Hyperparameters.ds + Hyperparameters.da)*2 + 1)])
 
-    for i in range(5000):
+    for i in range(2000):
         # 파라미터화 해야함
         Simulator.reset(Parameters.datasetId)
         num = random.sample(range(0, Hyperparameters.episode), 2)
@@ -41,9 +41,9 @@ def generate_label():
         setup_time2 = Simulator.sample_setup_times
 
         if setup_time1 > setup_time2:
-            label = 0
-        elif setup_time2 > setup_time1:
             label = 1
+        elif setup_time2 > setup_time1:
+            label = 0
         else:
             label = 0.5
 
