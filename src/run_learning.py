@@ -84,9 +84,25 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    simulator.main(mode="label_generator", algorithm="PBRL")  # dsp_rule = 개별 확인할 때만 사용하면 됨
     simulator.main(mode="learning", algorithm="reward_model")
     simulator.main(mode="learning", algorithm="PBRL")
+    simulator.main(mode="label_generator", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="PBRL")
+
+    """
+    simulator.main(mode="make_dataset", algorithm="reward_model")
+    simulator.main(mode="label_generator", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="dqn")
+    simulator.main(mode="label_generator", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="dqn")    
+    simulator.main(mode="label_generator", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="dqn")
+    
+    """
 
 # gantt chart 쑬 것인지
 # 학습 방법, kpi목표

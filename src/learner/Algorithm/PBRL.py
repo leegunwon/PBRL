@@ -3,7 +3,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 import logging
+import time
 import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 from src.common.Parameters import *
 from src.learner.common.ReplayBuffer import *
 from src.learner.common.RewardModel import RewardModel
@@ -18,7 +21,6 @@ class PBRL:
     reward_model = RewardModel(
         ds=Hyperparameters.input_layer,
         da=Hyperparameters.output_layer,
-        ensemble_size=Hyperparameters.ensemble_size,
         lr=Hyperparameters.reward_lr,
         max_size=Hyperparameters.max_size,
         size_sample_action=Hyperparameters.size_sample_action,
@@ -53,12 +55,10 @@ class PBRL:
         q_target = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         q_target.load_state_dict(q.state_dict())
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
-        score = 0.0
-        print_interval = 20
         makespan_list = []
-        q_over_time_list = []
         score_list = []
         util_list = []
+        max_score = -10000
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
@@ -94,8 +94,11 @@ class PBRL:
             if (memory.size() > 100 and Hyperparameters.mode == 4):
                 cls.train(q, q_target, memory, optimizer)
 
-            makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
-                                                                                 False, makespan_list, util_list,
+            if (n_epi%10==0):
+                if max_score < abs(score):
+                    max_score = abs(score)
+                makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
+                                                                                 True, makespan_list, util_list,
                                                                                  score_list)
 
         # 결과 및 파라미터 저장
@@ -104,10 +107,31 @@ class PBRL:
         file_path = os.path.join(save_directory, file_name)
         torch.save(params, file_path)
         cls.reward_model.data_save()
-        fig = go.Figure([go.Scatter(x=range(1, len(util_list) - 1), y=util_list)])
-        fig.add_trace(go.Scatter(x=range(1, len(score_list) - 1), y=score_list))
+
+        score_list = [s/max_score for s in score_list]
+
+        fig = make_subplots(rows=1, cols=2)
+        df = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
+        fig1 = px.scatter(df, x='x', y='score', trendline='ols', title='Score')
+        df = pd.DataFrame({'score': score_list, 'util': util_list})
+        fig2 = px.scatter(df, x='score', y='util', trendline='ols', title='Score vs Util Relationship')
+        for trace in fig1.data:
+            fig.add_trace(trace, row=1, col=1)
+        for trace in fig2.data:
+            fig.add_trace(trace, row=1, col=2)
+
+        # Trendline에서의 예측 값 계산
+        trendline_x = fig2.data[1]['x']
+        trendline_y = fig2.data[1]['y']
+        predictions = np.interp(df['score'], trendline_x, trendline_y)
+
+        # 각 데이터 포인트의 실제 값과 예측 값 사이의 차이 계산
+        residuals = df['util'] - predictions
+
+        # 분산 계산
+        variance = np.var(residuals)
         fig.show()
-        print("학습이 종료되었습니다")
+        print("분산값 : " + str(variance))
 
     @classmethod
     def evaluate(cls):
@@ -153,31 +177,32 @@ class PBRL:
         Learn reward
         :return:
         """
+        t1 = time.time()
+
         cls.load_reward_model()
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
-        sa_t_1 = df.iloc[:, 0:43].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
-        sa_t_2 = df.iloc[:, 43:86].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.da + Hyperparameters.ds))
+        sa_t_1 = df.iloc[:, 0:43].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
+        sa_t_2 = df.iloc[:, 43:86].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         labels = df.iloc[:, 86].to_numpy()[::3]
-        # buffer에 넣어줘야 함.
-        acc_chart = []
+        print(len(labels))
         max_acc = 0
+        times = Hyperparameters.reward_update
         for epoch in range(Hyperparameters.reward_update):
             train_acc = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
             train_acc = round(train_acc, 3)
-
             if train_acc > max_acc:
                 max_acc = train_acc
                 cls.save_reward_model()
-            print(max_acc)
-            if (epoch%10) == 0:
-                acc_chart.append(train_acc)
+            print(train_acc)
             if train_acc > 0.97:
+                times = epoch
                 break
-        fig = go.Figure(data=go.Scatter(x=list(range(1, len(acc_chart)+1)), y=acc_chart))
+        t2 = time.time()
+        print("Reward function is updated!! ACC: " + str(max_acc) + "\t"
+              "time taken : " + str(t2-t1) + "\t"
+              "repetitions : " + str(times))
 
-        print("Reward function is updated!! ACC: " + str(train_acc))
-        fig.show()
     @classmethod
     def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, util_list, score_list):
         Flow_time, machine_util, util, makespan, Tardiness_time, Lateness_time, T_max, q_time_true, q_time_false, q_job_t, q_job_f, q_over_time, rtf = env.performance_measure()

@@ -42,16 +42,12 @@ class SimpleNN(nn.Module):
 
 
 class RewardModel:
-    def __init__(self, ds, da,
-                 ensemble_size=3, lr=3e-4, size_sample_action=1,
+    def __init__(self, ds, da, lr=3e-4, size_sample_action=1,
                  max_size=1000, activation='tanh', capacity=5e5):
 
         self.ds = ds  # 상태의 차원
         self.da = da  # 행동의 차원
-        self.de = ensemble_size  # 앙상블의 크기
         self.lr = lr  # 학습률
-        self.ensemble = []  # 모델 앙상블
-        self.paramlst = []  # 앙상블 멤버들의 파라미터 목록
         self.opt = None  # 옵티마이저
         self.model = None  # 모델
         self.max_size = max_size  # 버퍼의 최대 크기
@@ -288,11 +284,10 @@ class RewardModel:
                     if label == predicted[idx]:
                         correct += 1
 
-            accuracy = correct / filtered_labels_len
-
             loss.backward()
             self.opt.step()
 
+        accuracy = correct / filtered_labels_len
         return accuracy
 
 

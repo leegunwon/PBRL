@@ -6,6 +6,9 @@ from src.learner.common.Hyperparameters import *
 import torch.nn.functional as F
 import torch.optim as optim
 from src.simulator.Simulator import *
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 import logging
 from src.common.Parameters import *
@@ -44,7 +47,7 @@ class DQN:
         util_list = []
         score_list2 = []
         save_directory = f"{pathConfig.model_save_path}{os.sep}{Parameters.simulation_time}"  # 디렉토리 경로를 지정합니다.
-
+        max_score = -1
         if Parameters.param_down_on:
             os.makedirs(save_directory, exist_ok=True)  # 경로 없을 시 생성
 
@@ -63,8 +66,11 @@ class DQN:
                     score += r
                 if done:
                     break
-            makespan_list, q_over_time_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
-                                                                                 False, makespan_list, q_over_time_list,
+            if (n_epi%10==0):
+                if max_score < abs(score):
+                    max_score = abs(score)
+                makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
+                                                                                 True, makespan_list, util_list,
                                                                                  score_list)
             # env.gantt_chart()
 
@@ -79,10 +85,17 @@ class DQN:
                 file_path = os.path.join(save_directory, file_name)
                 torch.save(params, file_path)
 
-        x = [i for i in range(len(util_list))]
-        plt.plot(x, util_list)
-        plt.plot(x, score_list2)
-        plt.show()
+        score_list = [s/max_score for s in score_list]
+
+        fig = make_subplots(rows=1, cols=2)
+        df = pd.DataFrame({'x': list(range(1, len(score_list))), 'score': score_list})
+        fig1 = px.scatter(df, x='x', y='score', trendline='ols', title='Score')
+        df = pd.DataFrame({'score': score_list, 'util': util_list})
+        fig2 = px.scatter(df, x='score', y='util', trendline='ols', title='Score vs Util Relationship')
+        for trace in fig1.data:
+            fig.add_trace(trace, row=1, col=1)
+        for trace in fig2.data:
+            fig.add_trace(trace, row=1, col=2)
         print("학습이 종료되었습니다")
 
     @classmethod
@@ -165,7 +178,7 @@ class DQN:
         print("평가가 종료되었습니다.")
 
     @classmethod
-    def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, q_over_time_list, score_list):
+    def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, util_list, score_list):
         Flow_time, machine_util, util, makespan, Tardiness_time, Lateness_time, T_max, q_time_true, q_time_false, q_job_t, q_job_f, q_over_time, rtf = env.performance_measure()
 
         output_string = "--------------------------------------------------\n" + \
@@ -176,8 +189,8 @@ class DQN:
         print(output_string)
         if type:
             makespan_list.append(makespan)
-            q_over_time_list.append(q_over_time)
+            util_list.append(q_over_time)
             score_list.append(score)
         if Parameters.log_on:
             logging.info(f'performance :{output_string}')
-        return makespan_list, q_over_time_list, score_list
+        return makespan_list, util_list, score_list
