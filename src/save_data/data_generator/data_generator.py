@@ -12,7 +12,7 @@ def generate_label():
     else:
         df = pd.DataFrame([], columns=[str(k) for k in range((Hyperparameters.ds + Hyperparameters.da)*2 + 1)])
 
-    for i in range(2000):
+    for i in range(3000):
         # 파라미터화 해야함
         Simulator.reset(Parameters.datasetId)
         num = random.sample(range(0, Hyperparameters.episode), 2)

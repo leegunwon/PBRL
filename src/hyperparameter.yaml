@@ -15,13 +15,13 @@ hyperparameter:
   buffer_limit: 50000
   input_layer: 42
   output_layer: 1
-  episode: 1000
+  episode: 2000
 
 
 configRL:
   state_type: simple_state  # state_12, state_36, cnn, cnn_state, simple_state
   action_type: dsp_rule          #
-  reward_type: rtf          # makespan, rtf, combination_reward_q_over_time_and_makespan, util
+  reward_type: util          # makespan, rtf, combination_reward_q_over_time_and_makespan, util
 
 engine:
   gantt_on_check: True  # 간트생성 on/off

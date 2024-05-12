@@ -43,7 +43,7 @@ class SimpleNN(nn.Module):
 
 class RewardModel:
     def __init__(self, ds, da, lr=3e-4, size_sample_action=1,
-                 max_size=1000, activation='tanh', capacity=5e5):
+                 max_size=2000, activation='tanh', capacity=5e5):
 
         self.ds = ds  # 상태의 차원
         self.da = da  # 행동의 차원
@@ -105,7 +105,6 @@ class RewardModel:
             # 아래의 과정을 통해 맨 앞 데이터를 지우고 가장 뒤의 데이터를 빈 리스트로 생성함.
             if len(self.inputs) > self.max_size:
                 self.inputs = self.inputs[1:]
-            # 끝났다는 표시?
             self.inputs.append([])
         else:
             # 만약 마지막 입력 데이터 저장소 값이 빈 리스트라면 -> 현재의 input 값으로 대체한다
@@ -283,7 +282,6 @@ class RewardModel:
                     filtered_labels_len += 1
                     if label == predicted[idx]:
                         correct += 1
-
             loss.backward()
             self.opt.step()
 

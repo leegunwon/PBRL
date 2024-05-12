@@ -85,16 +85,10 @@ if True:
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
     simulator.main(mode="make_dataset", algorithm="reward_model")
-    simulator.main(mode="label_generator", algorithm="reward_model")
-    simulator.main(mode="learning", algorithm="reward_model")
-    simulator.main(mode="learning", algorithm="PBRL")
-    simulator.main(mode="label_generator", algorithm="reward_model")
-    simulator.main(mode="learning", algorithm="reward_model")
-    simulator.main(mode="learning", algorithm="PBRL")
-    simulator.main(mode="label_generator", algorithm="reward_model")
-    simulator.main(mode="learning", algorithm="reward_model")
-    simulator.main(mode="learning", algorithm="PBRL")
-
+    for i in range(9):
+        simulator.main(mode="label_generator", algorithm="reward_model")
+        simulator.main(mode="learning", algorithm="reward_model")
+        simulator.main(mode="learning", algorithm="PBRL")
 # gantt chart 쑬 것인지
 # 학습 방법, kpi목표
 # 모든 디스패칭 룰 돌리기

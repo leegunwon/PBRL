@@ -88,7 +88,7 @@ class DQN:
         score_list = [s/max_score for s in score_list]
 
         fig = make_subplots(rows=1, cols=2)
-        df = pd.DataFrame({'x': list(range(1, len(score_list))), 'score': score_list})
+        df = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
         fig1 = px.scatter(df, x='x', y='score', trendline='ols', title='Score')
         df = pd.DataFrame({'score': score_list, 'util': util_list})
         fig2 = px.scatter(df, x='score', y='util', trendline='ols', title='Score vs Util Relationship')

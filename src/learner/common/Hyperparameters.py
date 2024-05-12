@@ -8,16 +8,14 @@ class Hyperparameters:
     buffer_limit = 50000
     input_layer = 42
     output_layer = 1
-    episode = 1000
+    episode = 2000
     exploration_episode = 10
     action_list = ["SPTSSU", "SSU", "EDD", "MST", "FIFO", "LIFO"]
 
     # state_type default:8 simple:42
     ds = 42
     da = 1
-    ensemble_size = 3
-    size_sample_action = 3
-    max_size = 1000
+    size_sample_action = 5
     activation = 'tanh'
     reward_lr = 0.001
     reward_batch = 128

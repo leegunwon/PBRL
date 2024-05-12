@@ -22,7 +22,7 @@ class PBRL:
         ds=Hyperparameters.input_layer,
         da=Hyperparameters.output_layer,
         lr=Hyperparameters.reward_lr,
-        max_size=Hyperparameters.max_size,
+        max_size=Hyperparameters.episode,
         size_sample_action=Hyperparameters.size_sample_action,
         activation=Hyperparameters.activation)
 
@@ -125,13 +125,24 @@ class PBRL:
         trendline_y = fig2.data[1]['y']
         predictions = np.interp(df['score'], trendline_x, trendline_y)
 
-        # 각 데이터 포인트의 실제 값과 예측 값 사이의 차이 계산
-        residuals = df['util'] - predictions
+        # 첫 번째 subplot의 x축 텍스트 크기 조정
+        fig.update_xaxes(tickfont=dict(size=40), row=1, col=1)
+        fig.update_yaxes(tickfont=dict(size=40), row=1, col=1)
 
-        # 분산 계산
-        variance = np.var(residuals)
+        # 평균 값 계산
+        mean_util = np.mean(df['util'])
+
+        # Total Sum of Squares (SST) 계산
+        sst = np.sum((df['util'] - mean_util) ** 2)
+
+        # Residual Sum of Squares (SSR) 계산
+        ssr = np.sum((df['util'] - predictions) ** 2)
+
+        # R² 값 계산
+        r_squared = 1 - (ssr / sst)
+
+        print("R² value: " + str(r_squared))
         fig.show()
-        print("분산값 : " + str(variance))
 
     @classmethod
     def evaluate(cls):
@@ -182,10 +193,10 @@ class PBRL:
         cls.load_reward_model()
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
-        sa_t_1 = df.iloc[:, 0:43].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
-        sa_t_2 = df.iloc[:, 43:86].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
-        labels = df.iloc[:, 86].to_numpy()[::3]
-        print(len(labels))
+        sa_t_1 = df.iloc[:, 0: (Hyperparameters.ds + Hyperparameters.da)].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
+        sa_t_2 = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da):(Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
+        labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
+
         max_acc = 0
         times = Hyperparameters.reward_update
         for epoch in range(Hyperparameters.reward_update):
@@ -195,13 +206,14 @@ class PBRL:
                 max_acc = train_acc
                 cls.save_reward_model()
             print(train_acc)
-            if train_acc > 0.97:
+            if train_acc > 0.999:
                 times = epoch
                 break
         t2 = time.time()
-        print("Reward function is updated!! ACC: " + str(max_acc) + "\t"
-              "time taken : " + str(t2-t1) + "\t"
-              "repetitions : " + str(times))
+        print("Reward function is updated!! ACC: " + str(max_acc) + "\n"
+              "time taken : " + str(t2-t1) + "\n"
+              "repetitions : " + str(times) + "\n"
+              "labels : " + str(len(labels)))
 
     @classmethod
     def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, util_list, score_list):
