@@ -59,6 +59,7 @@ class PBRL:
         score_list = []
         util_list = []
         max_score = -10000
+        min_score = 10000
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
@@ -95,8 +96,10 @@ class PBRL:
                 cls.train(q, q_target, memory, optimizer)
 
             if (n_epi%10==0):
-                if max_score < abs(score):
-                    max_score = abs(score)
+                if max_score < score:
+                    max_score = score
+                if min_score > score:
+                    min_score = score
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
                                                                                  True, makespan_list, util_list,
                                                                                  score_list)
@@ -108,7 +111,7 @@ class PBRL:
         torch.save(params, file_path)
         cls.reward_model.data_save()
 
-        score_list = [s/max_score for s in score_list]
+        score_list = [(s - min_score)/(max_score - min_score) for s in score_list]
 
         fig = make_subplots(rows=1, cols=2)
         df = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
@@ -141,9 +144,10 @@ class PBRL:
         # R² 값 계산
         r_squared = 1 - (ssr / sst)
         fig.update_layout(title=f"r_squared : {r_squared}")
-        print("R² value: " + str(r_squared))
+        # print("R² value: " + str(r_squared))
+        fig.show()
         fig.write_html(
-            f"{pathConfig.PBRL_result_chart_path}{os.sep}{Parameters.simulation_time}_{r_squared}_gantt.html")
+            f"{pathConfig.PBRL_result_chart_path}{os.sep}{Parameters.simulation_time}_gantt.html")
 
     @classmethod
     def evaluate(cls):
@@ -202,11 +206,11 @@ class PBRL:
         times = Hyperparameters.reward_update
         for epoch in range(Hyperparameters.reward_update):
             train_acc = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            train_acc = round(train_acc, 3)
+            train_acc = round(train_acc, 5)
             if train_acc > max_acc:
                 max_acc = train_acc
                 cls.save_reward_model()
-            print(train_acc)
+            # print(train_acc)
             if train_acc > 0.999:
                 times = epoch
                 break
@@ -222,7 +226,7 @@ class PBRL:
         output_string = "--------------------------------------------------\n" + \
                         f"util : {util:.3f}\n" + \
                         f"n_episode: {n_epi}, score : {score:.1f}, eps : {epsilon * 100:.1f}%"
-        print(output_string)
+        # print(output_string)
         if type:
             makespan_list.append(makespan)
             util_list.append(util)

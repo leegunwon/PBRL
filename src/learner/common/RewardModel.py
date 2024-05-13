@@ -275,7 +275,7 @@ class RewardModel:
             curr_loss.item()
             # compute acc
             _, predicted = torch.max(r_hat.data, 1)
-            labels_t = torch.tensor(labels_t).flatten().int()
+            labels_t = torch.tensor(labels_t).flatten()
             for idx in range(len(labels_t)):
                 label = labels_t[idx]
                 if label != 0.5:

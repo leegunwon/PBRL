@@ -2,7 +2,6 @@ from src.common.Parameters import *
 from src.simulator.GanttChart import *
 from src.simulator.Simulator import *
 from src.common.pathConfig import *
-import os
 from src.common.pathConfig import *
 def generate_label():
     print("labeling on")
@@ -13,7 +12,7 @@ def generate_label():
     else:
         df = pd.DataFrame([], columns=[str(k) for k in range((Hyperparameters.ds + Hyperparameters.da)*2 + 1)])
 
-    for i in range(3000):
+    for i in range(2000):
         # 파라미터화 해야함
         Simulator.reset(Parameters.datasetId)
         num = random.sample(range(0, Hyperparameters.episode), 2)
