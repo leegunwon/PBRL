@@ -243,3 +243,6 @@ class PBRL:
     def load_reward_model(cls):
         if os.path.exists(f"{pathConfig.reward_model_params_path}{os.sep}reward_model.pt"):
             cls.reward_model.load(pathConfig.reward_model_params_path)
+    @classmethod
+    def config_file_name(cls, name):
+        cls.file_name = name

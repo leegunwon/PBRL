@@ -15,7 +15,8 @@ class Hyperparameters:
     # state_type default:8 simple:42
     ds = 42
     da = 1
-    size_sample_action = 5
+    size_sample_action = 1
+    number_of_labeling = 1000
     activation = 'tanh'
     reward_lr = 0.001
     reward_batch = 128

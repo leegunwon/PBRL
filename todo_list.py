@@ -15,5 +15,7 @@ todo :
     1. 성능 지표 어떻게 할 것 인지 고민
     2. 차트 번호 text 띄우기? 아니면 애니메이션? -3개의 샘플 사이즈를 사용할 예정이므로 후 순위
     3. 왜 setup이 자꾸 나오지?
- 
+    
+    
+ conda env create -f environment.yml
 """

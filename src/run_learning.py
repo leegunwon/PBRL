@@ -85,7 +85,13 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    simulator.main(mode="learning", algorithm="PBRL")
+    file_name = f"size{Hyperparameters.size_sample_action}label{Hyperparameters.number_of_labeling}"
+    simulator.main(mode="make_dataset", algorithm="reward_model")
+    for i in range(9):
+        PBRL.config_file_name(file_name[0])
+        simulator.main(mode="label_generator", algorithm="PBRL")
+        simulator.main(mode="learning", algorithm="reward_model")
+        simulator.main(mode="learning", algorithm="PBRL")
 
 
 # gantt chart 쑬 것인지
