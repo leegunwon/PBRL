@@ -14,6 +14,7 @@ class pathConfig:
     labeled_data_path = ""
     unlabeled_data_path = ""
     reinforcement_model_params_path = ""
+    PBRL_result_chart_path = ""
 
     os = "/"
 
@@ -33,3 +34,4 @@ class pathConfig:
         cls.reinforcement_model_params_path = f"{cls.absolute_path}{os.sep}params_data{os.sep}reinforcement_learning"
         cls.labeled_data_path = f"{cls.absolute_path}{os.sep}save_data{os.sep}labeled_data"
         cls.unlabeled_data_path = f"{cls.absolute_path}{os.sep}save_data{os.sep}unlabeled_data"
+        cls.PBRL_result_chart_path = f"{cls.absolute_path}{os.sep}simulator_result{os.sep}PBRL_result"

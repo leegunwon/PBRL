@@ -127,7 +127,7 @@ class PBRL:
 
         # 첫 번째 subplot의 x축 텍스트 크기 조정
         fig.update_xaxes(tickfont=dict(size=40), row=1, col=1)
-        fig.update_yaxes(tickfont=dict(size=40), row=1, col=1)
+        fig.update_yaxes(tickfont=dict(size=40), row=1, col=2)
 
         # 평균 값 계산
         mean_util = np.mean(df['util'])
@@ -140,9 +140,10 @@ class PBRL:
 
         # R² 값 계산
         r_squared = 1 - (ssr / sst)
-
+        fig.update_layout(title=f"r_squared : {r_squared}")
         print("R² value: " + str(r_squared))
-        fig.show()
+        fig.write_html(
+            f"{pathConfig.PBRL_result_chart_path}{os.sep}{Parameters.simulation_time}_{r_squared}_gantt.html")
 
     @classmethod
     def evaluate(cls):

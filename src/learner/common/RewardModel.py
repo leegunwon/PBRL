@@ -289,18 +289,3 @@ class RewardModel:
         return accuracy
 
 
-def reward_dateset_generator(trajectory_length):
-    """
-    랜덤 룰로 시뮬레이션을 돌림
-    추가해야 될 부분
-    random_rule 함수 내에 trajectory 단위로 저장하는 방법을 추가해야 됌
-    db를 사용해야 되나?
-    이 gantt_history_df도 저장해야 됨.
-    그리고 df를 바탕으로 점수 산출하는 알고리즘도 제작 ( df 순서를 바탕으로 어떻게 점수 산출하지? 기존 bradley-Terry 모델 분석)
-    현재 20씩 저장하는 방식은 곤란할지도
-    현재 결과는 너무 랜덤해서 리워드가 개판임
-
-
-    :return:
-    """
-    Simulator.run_random_rule(trajectory_length)
