@@ -76,8 +76,9 @@ def update_graph(n_clicks_A, n_clicks_B, n_clicks_draw):
     setup_time = [bar.x[0] for bar in fig1.data if ('setup' in bar.legendgroup and bar.marker.pattern.shape == "/")]
     setup_time1 = sum(setup_time)
 
-    fig1.update_layout(title=f"chart_A setup_time : {setup_time1}", yaxis=dict(categoryorder='array',
-                        categoryarray=categories), xaxis=dict(range=[base_date, max_date]))
+    fig1.update_layout(title={'text': f"chart_A setup_time : {setup_time1}", 'font': {'size': 40}},
+                       yaxis=dict(categoryorder='array', tickfont=dict(size=36),
+                       categoryarray=categories), xaxis=dict(range=[base_date, max_date], tickfont=dict(size=36)), showlegend=False)
     Simulator.reset(Parameters.datasetId)
 
     # 데이터 불러서 sample labeling 작업 수행함
@@ -96,8 +97,9 @@ def update_graph(n_clicks_A, n_clicks_B, n_clicks_draw):
     setup_time2 = sum(setup_time)
     Flow_time, machine_util, util, makespan, tardiness, lateness, t_max, q_time_true, q_time_false, q_job_t, q_job_f, q_time, rtf = Simulator.performance_measure()
 
-    fig2.update_layout(title=f"chart_B setup_time : {setup_time2}", yaxis=dict(categoryorder='array',
-            categoryarray=categories), xaxis=dict(range=[base_date, max_date]))
+    fig2.update_layout(title={'text': f"chart_B setup_time : {setup_time2}", 'font': {'size': 40}},
+                       yaxis=dict(categoryorder='array',tickfont=dict(size=36),
+                       categoryarray=categories), xaxis=dict(range=[base_date, max_date], tickfont=dict(size=36)), showlegend=False)
 
     if setup_time1 > setup_time2:
         label = 0

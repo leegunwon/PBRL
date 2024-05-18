@@ -126,13 +126,7 @@ class RewardModel:
 
 
     def r_hat(self, x):
-        # they say they average the rewards from each member of the ensemble, but I think this only makes sense if the rewards are already normalized
-        # but I don't understand how the normalization should be happening right now :(
-        r_hats = []
-        r_hats.append(self.r_hat_model(x).detach().cpu().numpy())
-        r_hats = np.array(r_hats)
-        # 이거 왜 평균 구함?
-
+        r_hats = self.r_hat_model(x).detach().cpu().numpy()
         return r_hats
 
     def save(self, model_dir):
@@ -240,6 +234,7 @@ class RewardModel:
         # 전체 데이터를 학습하기 위해 몇번 반복해야할 지 계산
         num_epochs = int(np.ceil(max_len / self.train_batch_size))
 
+        sum_loss = 0.0
         for epoch in range(num_epochs):
             # model parameter 초기화
             self.opt.zero_grad()
@@ -271,21 +266,21 @@ class RewardModel:
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
             loss += curr_loss
+            sum_loss += curr_loss.item()
             # 현재 계산된 curr_loss 값을 int로 변환하여 저장
-            curr_loss.item()
+
             # compute acc
-            _, predicted = torch.max(r_hat.data, 1)
-            labels_t = torch.tensor(labels_t).flatten()
-            for idx in range(len(labels_t)):
-                label = labels_t[idx]
-                if label != 0.5:
-                    filtered_labels_len += 1
-                    if label == predicted[idx]:
-                        correct += 1
+            # _, predicted = torch.max(r_hat.data, 1)
+            # labels_t = torch.tensor(labels_t).flatten()
+            # for idx in range(len(labels_t)):
+            #     label = labels_t[idx]
+            #     if label != 0.5:
+            #         filtered_labels_len += 1
+            #         if label == predicted[idx]:
+            #             correct += 1
             loss.backward()
             self.opt.step()
-
-        accuracy = correct / filtered_labels_len
-        return accuracy
-
+        # accuracy = correct / filtered_labels_len
+        # return accuracy
+        return sum_loss/self.train_batch_size
 

@@ -9,18 +9,18 @@ class Hyperparameters:
     input_layer = 42
     output_layer = 1
     episode = 2000
-    exploration_episode = 10
+    exploration_episode = 2
     action_list = ["SPTSSU", "SSU", "EDD", "MST", "FIFO", "LIFO"]
 
     # state_type default:8 simple:42
     ds = 42
     da = 1
-    size_sample_action = 1
-    number_of_labeling = 1000
+    size_sample_action = 3
+    number_of_labeling = 2000
     activation = 'tanh'
     reward_lr = 0.001
     reward_batch = 128
-    reward_update = 1000
+    reward_update = 3000
     reset_update: 100
     topK: 5
     mode = 4

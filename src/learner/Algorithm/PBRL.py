@@ -58,17 +58,17 @@ class PBRL:
         makespan_list = []
         score_list = []
         util_list = []
-        max_score = -10000
-        min_score = 10000
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
-        if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
+        cls.load_reward_model()
+        if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt") and (Hyperparameters.mode != 1):
             params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
             q.load_state_dict(params)
+        # cls.learn_reward()
 
         for n_epi in range(Hyperparameters.episode):
-            epsilon = max(0.01, 0.8 - 0.001 * n_epi)
+            epsilon = max(0.01, 0.8 - 0.9/Hyperparameters.episode * n_epi)
             s = env.reset(Parameters.datasetId)
             done = False
             score = 0.0
@@ -80,7 +80,7 @@ class PBRL:
 
                 s_prime, r, done = env.step(a) # r은 그냥 0으로 설정
                 inputs = np.concatenate([s, np.array([a])])
-                r = cls.reward_model.r_hat(inputs)[0][0]
+                r = cls.reward_model.r_hat(inputs)[0]
                 done_mask = 0.0 if done else 1.0
 
                 # data 생성할 때만 사용
@@ -96,58 +96,58 @@ class PBRL:
                 cls.train(q, q_target, memory, optimizer)
 
             if (n_epi%10==0):
-                if max_score < score:
-                    max_score = score
-                if min_score > score:
-                    min_score = score
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
                                                                                  True, makespan_list, util_list,
                                                                                  score_list)
 
-        # 결과 및 파라미터 저장
-        params = q.state_dict()
-        file_name = "q_net_param.pt"
-        file_path = os.path.join(save_directory, file_name)
-        torch.save(params, file_path)
+            if Hyperparameters.mode != 1:
+                # 결과 및 파라미터 저장
+                params = q.state_dict()
+                file_name = f"{n_epi}q_net_param.pt"
+                file_path = os.path.join(save_directory, file_name)
+                torch.save(params, file_path)
+
         cls.reward_model.data_save()
 
-        score_list = [(s - min_score)/(max_score - min_score) for s in score_list]
+        if Hyperparameters.mode != 1:
+            score_list = cls.normalize(score_list)
 
-        fig = make_subplots(rows=1, cols=2)
-        df = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
-        fig1 = px.scatter(df, x='x', y='score', trendline='ols', title='Score')
-        df = pd.DataFrame({'score': score_list, 'util': util_list})
-        fig2 = px.scatter(df, x='score', y='util', trendline='ols', title='Score vs Util Relationship')
-        for trace in fig1.data:
-            fig.add_trace(trace, row=1, col=1)
-        for trace in fig2.data:
-            fig.add_trace(trace, row=1, col=2)
+            fig = make_subplots(rows=1, cols=2)
+            df = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
+            fig1 = px.scatter(df, x='x', y='score', trendline='ols', title='Score')
+            df = pd.DataFrame({'score': score_list, 'util': util_list})
+            fig2 = px.scatter(df, x='score', y='util', trendline='ols', title='Score vs Util Relationship')
+            for trace in fig1.data:
+                fig.add_trace(trace, row=1, col=1)
+            for trace in fig2.data:
+                fig.add_trace(trace, row=1, col=2)
 
-        # Trendline에서의 예측 값 계산
-        trendline_x = fig2.data[1]['x']
-        trendline_y = fig2.data[1]['y']
-        predictions = np.interp(df['score'], trendline_x, trendline_y)
+            # Trendline에서의 예측 값 계산
+            trendline_x = fig2.data[1]['x']
+            trendline_y = fig2.data[1]['y']
+            predictions = np.interp(df['score'], trendline_x, trendline_y)
 
-        # 첫 번째 subplot의 x축 텍스트 크기 조정
-        fig.update_xaxes(tickfont=dict(size=40), row=1, col=1)
-        fig.update_yaxes(tickfont=dict(size=40), row=1, col=2)
+            # 첫 번째 subplot의 x축 텍스트 크기 조정
+            fig.update_xaxes(tickfont=dict(size=40), row=1, col=1)
+            fig.update_xaxes(tickfont=dict(size=40), row=1, col=2)
+            fig.update_yaxes(tickfont=dict(size=40), row=1, col=1)
+            fig.update_yaxes(tickfont=dict(size=40), row=1, col=2)
+            # 평균 값 계산
+            mean_util = np.mean(df['util'])
 
-        # 평균 값 계산
-        mean_util = np.mean(df['util'])
+            # Total Sum of Squares (SST) 계산
+            sst = np.sum((df['util'] - mean_util) ** 2)
 
-        # Total Sum of Squares (SST) 계산
-        sst = np.sum((df['util'] - mean_util) ** 2)
+            # Residual Sum of Squares (SSR) 계산
+            ssr = np.sum((df['util'] - predictions) ** 2)
 
-        # Residual Sum of Squares (SSR) 계산
-        ssr = np.sum((df['util'] - predictions) ** 2)
-
-        # R² 값 계산
-        r_squared = 1 - (ssr / sst)
-        fig.update_layout(title=f"r_squared : {r_squared}")
-        # print("R² value: " + str(r_squared))
-        fig.show()
-        fig.write_html(
-            f"{pathConfig.PBRL_result_chart_path}{os.sep}{Parameters.simulation_time}_gantt.html")
+            # R² 값 계산
+            r_squared = 1 - (ssr / sst)
+            fig.update_layout(title=f"r_squared : {r_squared}")
+            # print("R² value: " + str(r_squared))
+            fig.show()
+            fig.write_html(
+                f"{pathConfig.PBRL_result_chart_path}{os.sep}{Parameters.simulation_time}_gantt.html")
 
     @classmethod
     def evaluate(cls):
@@ -160,32 +160,40 @@ class PBRL:
         # 모델 불러오는 코드 필요함
         #
         env = Simulator
+        util_list = []
         q = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         q_target = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         q_target.load_state_dict(q.state_dict())
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
         score = 0.0
+        max_uitl = 0.92
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
-        if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
-            params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
-            q.load_state_dict(params)
+        for n_epi in range(Hyperparameters.episode):
+            if os.path.exists(f"{save_directory}{os.sep}{n_epi}q_net_param.pt"):
+                params = torch.load(f"{save_directory}{os.sep}{n_epi}q_net_param.pt")
+                q.load_state_dict(params)
 
-        s = env.reset(Parameters.datasetId)
-        done = False
-        score = 0.0
-        while not done:
-            a = q.sample_action(torch.from_numpy(s).float(), 0)
-            s_prime, r, done = env.step(a)  # r은 그냥 0으로 설정
-            inputs = np.concatenate([s, np.array([a])])
-            r = cls.reward_model.r_hat(inputs)[0]
-            done_mask = 0.0 if done else 1.0
-            # data 생성할 때만 사용
-            s = s_prime
-            score += r
-        env.gantt_chart()
-        Flow_time, machine_util, util, makespan, tardiness, lateness, t_max, q_time_true, q_time_false, q_job_t, q_job_f, q_time, rtf = env.performance_measure()
-
+            s = env.reset(Parameters.datasetId)
+            done = False
+            score = 0.0
+            while not done:
+                a = q.sample_action(torch.from_numpy(s).float(), 0)
+                s_prime, r, done = env.step(a)  # r은 그냥 0으로 설정
+                inputs = np.concatenate([s, np.array([a])])
+                r = cls.reward_model.r_hat(inputs)[0]
+                done_mask = 0.0 if done else 1.0
+                # data 생성할 때만 사용
+                s = s_prime
+                score += r
+            Flow_time, machine_util, util, makespan, tardiness, lateness, t_max, q_time_true, q_time_false, q_job_t, q_job_f, q_time, rtf = env.performance_measure()
+            if max_uitl < util:
+                env.gantt_chart()
+                print(n_epi)
+                max_uitl = util
+            util_list.append(util)
+        fig = px.scatter(x=list(range(len(util_list))), y=util_list)
+        fig.show()
 
     @classmethod
     def learn_reward(cls):
@@ -193,8 +201,6 @@ class PBRL:
         Learn reward
         :return:
         """
-        t1 = time.time()
-
         cls.load_reward_model()
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
@@ -203,22 +209,25 @@ class PBRL:
         labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
 
         max_acc = 0
+        min_loss = 1.0
         times = Hyperparameters.reward_update
+        loss_list = []
         for epoch in range(Hyperparameters.reward_update):
-            train_acc = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            train_acc = round(train_acc, 5)
-            if train_acc > max_acc:
-                max_acc = train_acc
+            loss_avg = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
+            loss_list.append(loss_avg)
+            if loss_avg < min_loss:
+                min_loss = loss_avg
+                print(loss_avg)
                 cls.save_reward_model()
-            # print(train_acc)
-            if train_acc > 0.999:
-                times = epoch
-                break
-        t2 = time.time()
-        print("Reward function is updated!! ACC: " + str(max_acc) + "\n"
-              "time taken : " + str(t2-t1) + "\n"
-              "repetitions : " + str(times) + "\n"
-              "labels : " + str(len(labels)))
+
+        fig = px.scatter(x=list(range(len(loss_list))), y=loss_list)
+        fig.show()
+    @classmethod
+    def normalize(cls, data):
+        min_val = min(data)
+        max_val = max(data)
+        normalized_data = [(x - min_val) / (max_val - min_val) for x in data]
+        return normalized_data
 
     @classmethod
     def script_performance(cls, env, n_epi, epsilon, memory, score, type, makespan_list, util_list, score_list):
@@ -226,7 +235,7 @@ class PBRL:
         output_string = "--------------------------------------------------\n" + \
                         f"util : {util:.3f}\n" + \
                         f"n_episode: {n_epi}, score : {score:.1f}, eps : {epsilon * 100:.1f}%"
-        # print(output_string)
+        print(output_string)
         if type:
             makespan_list.append(makespan)
             util_list.append(util)

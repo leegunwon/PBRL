@@ -132,6 +132,7 @@ class DQN:
     def get_evaluate(cls, checkpoint_path, number_of_checkpoint, datasets):
         env = Simulator
         save_directory = f"{pathConfig.model_save_path}"
+        q = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         # model load
         if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt"):
             params = torch.load(f"{save_directory}{os.sep}q_net`_`param.pt")
