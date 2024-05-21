@@ -23,8 +23,7 @@ class PBRL:
         da=Hyperparameters.output_layer,
         lr=Hyperparameters.reward_lr,
         max_size=Hyperparameters.episode,
-        size_sample_action=Hyperparameters.size_sample_action,
-        activation=Hyperparameters.activation)
+        size_sample_action=Hyperparameters.size_sample_action)
 
     @classmethod
     def train(cls, q, q_target, memory, optimizer):
@@ -41,7 +40,7 @@ class PBRL:
             optimizer.step()
 
     @classmethod
-    def main(cls):
+    def main(cls, count):
         """
         찾아야 할 요소는 언제 train_reward를 수행하는 지
         어떻게 loss를 계산하는지
@@ -61,9 +60,9 @@ class PBRL:
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
-        cls.load_reward_model()
-        if os.path.exists(f"{save_directory}{os.sep}q_net_param.pt") and (Hyperparameters.mode != 1):
-            params = torch.load(f"{save_directory}{os.sep}q_net_param.pt")
+        cls.load_reward_model(count)
+        if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt") and (Hyperparameters.mode != 1):
+            params = torch.load(f"{save_directory}{os.sep}{count}q_net_param.pt")
             q.load_state_dict(params)
         # cls.learn_reward()
 
@@ -73,10 +72,7 @@ class PBRL:
             done = False
             score = 0.0
             while not done:
-                if (Hyperparameters.mode == 1):
-                    a = random.randint(0, len(Hyperparameters.action_list) - 1)
-                else:
-                    a = q.sample_action(torch.from_numpy(s).float(), epsilon)
+                a = q.sample_action(torch.from_numpy(s).float(), epsilon)
 
                 s_prime, r, done = env.step(a) # r은 그냥 0으로 설정
                 inputs = np.concatenate([s, np.array([a])])
@@ -100,16 +96,14 @@ class PBRL:
                                                                                  True, makespan_list, util_list,
                                                                                  score_list)
 
-            if Hyperparameters.mode != 1:
-                # 결과 및 파라미터 저장
-                params = q.state_dict()
-                file_name = f"{n_epi}q_net_param.pt"
-                file_path = os.path.join(save_directory, file_name)
-                torch.save(params, file_path)
-
         cls.reward_model.data_save()
 
         if Hyperparameters.mode != 1:
+            params = q.state_dict()
+            file_name = f"{count}q_net_param.pt"
+            file_path = os.path.join(save_directory, file_name)
+            torch.save(params, file_path)
+
             score_list = cls.normalize(score_list)
 
             fig = make_subplots(rows=1, cols=2)
@@ -145,12 +139,12 @@ class PBRL:
             r_squared = 1 - (ssr / sst)
             fig.update_layout(title=f"r_squared : {r_squared}")
             # print("R² value: " + str(r_squared))
-            fig.show()
+            # fig.show()
             fig.write_html(
-                f"{pathConfig.PBRL_result_chart_path}{os.sep}{Parameters.simulation_time}_gantt.html")
+                f"{pathConfig.PBRL_result_chart_path}{os.sep}{count}_score.html")
 
     @classmethod
-    def evaluate(cls):
+    def evaluate(cls, count):
         """
         찾아야 할 요소는 언제 train_reward를 수행하는 지
         어떻게 loss를 계산하는지
@@ -169,10 +163,9 @@ class PBRL:
         max_uitl = 0.92
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
-        for n_epi in range(Hyperparameters.episode):
-            if os.path.exists(f"{save_directory}{os.sep}{n_epi}q_net_param.pt"):
-                params = torch.load(f"{save_directory}{os.sep}{n_epi}q_net_param.pt")
-                q.load_state_dict(params)
+        if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt"):
+            params = torch.load(f"{save_directory}{os.sep}{count}q_net_param.pt")
+            q.load_state_dict(params)
 
             s = env.reset(Parameters.datasetId)
             done = False
@@ -187,41 +180,32 @@ class PBRL:
                 s = s_prime
                 score += r
             Flow_time, machine_util, util, makespan, tardiness, lateness, t_max, q_time_true, q_time_false, q_job_t, q_job_f, q_time, rtf = env.performance_measure()
-            if max_uitl < util:
-                env.gantt_chart()
-                print(n_epi)
-                max_uitl = util
-            util_list.append(util)
-        fig = px.scatter(x=list(range(len(util_list))), y=util_list)
-        fig.show()
+            env.gantt_chart()
+            print(util)
+            print(score)
+
 
     @classmethod
-    def learn_reward(cls):
+    def learn_reward(cls, count):
         """
         Learn reward
         :return:
         """
-        cls.load_reward_model()
+        cls.load_reward_model(count)
         # labeled data 불러와서 train_reward 작업만 하자
         df = cls.reward_model.get_label()
         sa_t_1 = df.iloc[:, 0: (Hyperparameters.ds + Hyperparameters.da)].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         sa_t_2 = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da):(Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
 
-        max_acc = 0
-        min_loss = 1.0
-        times = Hyperparameters.reward_update
-        loss_list = []
+
+
         for epoch in range(Hyperparameters.reward_update):
             loss_avg = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            loss_list.append(loss_avg)
-            if loss_avg < min_loss:
-                min_loss = loss_avg
-                print(loss_avg)
-                cls.save_reward_model()
-
-        fig = px.scatter(x=list(range(len(loss_list))), y=loss_list)
-        fig.show()
+            if loss_avg < 0.01:
+                cls.save_reward_model(count)
+                break
+        cls.save_reward_model(count)
     @classmethod
     def normalize(cls, data):
         min_val = min(data)
@@ -245,13 +229,13 @@ class PBRL:
 
         return makespan_list, util_list, score_list
     @classmethod
-    def save_reward_model(cls):
-        cls.reward_model.save(pathConfig.reward_model_params_path)
+    def save_reward_model(cls, count):
+        cls.reward_model.save(pathConfig.reward_model_params_path, count)
 
     @classmethod
-    def load_reward_model(cls):
-        if os.path.exists(f"{pathConfig.reward_model_params_path}{os.sep}reward_model.pt"):
-            cls.reward_model.load(pathConfig.reward_model_params_path)
+    def load_reward_model(cls, count):
+        if os.path.exists(f"{pathConfig.reward_model_params_path}{os.sep}{count}reward_model.pt"):
+            cls.reward_model.load(pathConfig.reward_model_params_path, count)
     @classmethod
     def config_file_name(cls, name):
         cls.file_name = name

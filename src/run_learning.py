@@ -4,18 +4,14 @@ from src.learner.Algorithm.DQN_action_masking import *
 from src.learner.Algorithm.DQN_CNN import *
 from src.learner.Algorithm.DDQN import *
 from src.learner.Algorithm.PBRL import PBRL
-from src.learner.common.Hyperparameters import *
 from src.save_data.data_generator.compare_chart import *
-from src.simulator.GanttChart import *
 from src.save_data.data_generator.data_generator import *
-import plotly
 import yaml
 import logging
 import os
 
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 class Run_Simulator:
-
     def __init__(self):
         Parameters.set_time_to_string()  # 현재 시간 가져오는 코드 -> 로그 및 기록을 위함
         Parameters.set_absolute_path()
@@ -37,7 +33,7 @@ class Run_Simulator:
 
         print("set complete")
 
-    def main(self, mode, algorithm):
+    def  main(self, mode, algorithm):
         logging.info(f"mode: {mode}")
         logging.info(f"algoritm: {algorithm}")
         if mode == "learning":
@@ -54,17 +50,20 @@ class Run_Simulator:
                 ppo = PPO()
                 ppo.main()
             elif algorithm == 'PBRL':
-                PBRL.main()
+                for rep in range(10):
+                    PBRL.main(rep)
             elif algorithm == 'reward_model':
                 # reward_model 학습 및 생성
-                PBRL.learn_reward()
+                for j in range(10):
+                    PBRL.learn_reward(j)
 
         elif mode == 'evaluate':
             if algorithm == "dqn":
                 DQN.get_evaluate(f"{pathConfig.model_save_path}{os.sep}240209_233447", 100,
                                  ["sks_train_1"])
             elif algorithm == "PBRL":
-                PBRL.evaluate()
+                for repp in range(10):
+                    PBRL.evaluate(repp)
 
         elif mode == "result":
             if algorithm == 'dqn':
@@ -72,7 +71,7 @@ class Run_Simulator:
 
         elif mode == "make_dataset":
             Hyperparameters.mode = 1
-            PBRL.main()
+            PBRL.main(0)
 
         elif mode == "labeling":
             app_run()
@@ -85,7 +84,10 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    simulator.main(mode="labeling", algorithm="PBRL")
+    simulator.main(mode="learning", algorithm="reward_model")
+    simulator.main(mode="learning", algorithm="PBRL")
+    simulator.main(mode="evaluate", algorithm="PBRL")
+
 
 
 # gantt chart 쑬 것인지

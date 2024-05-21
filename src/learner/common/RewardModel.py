@@ -34,6 +34,8 @@ class SimpleNN(nn.Module):
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
+        # x = torch.tanh(self.layer1(x))
+        # x = torch.tanh(self.layer2(x))
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
         x = self.layer3(x)  # 직접적인 선형 변환 결과를 반환
@@ -43,7 +45,7 @@ class SimpleNN(nn.Module):
 
 class RewardModel:
     def __init__(self, ds, da, lr=3e-4, size_sample_action=1,
-                 max_size=2000, activation='tanh', capacity=5e5):
+                 max_size=2000, capacity=5e5):
 
         self.ds = ds  # 상태의 차원
         self.da = da  # 행동의 차원
@@ -51,7 +53,6 @@ class RewardModel:
         self.opt = None  # 옵티마이저
         self.model = None  # 모델
         self.max_size = max_size  # 버퍼의 최대 크기
-        self.activation = activation  # 활성화 함수
         self.size_sample_action = size_sample_action  # 세그먼트의 크기
 
         self.capacity = int(capacity)  # 버퍼의 용량
@@ -129,14 +130,14 @@ class RewardModel:
         r_hats = self.r_hat_model(x).detach().cpu().numpy()
         return r_hats
 
-    def save(self, model_dir):
+    def save(self, model_dir, count):
         torch.save(
-            self.model.state_dict(), '%s/reward_model.pt' % (model_dir)
+            self.model.state_dict(), f'{model_dir}/{count}reward_model.pt'
         )
 
-    def load(self, model_dir):
+    def load(self, model_dir, count):
         self.model.load_state_dict(
-            torch.load('%s/reward_model.pt' % (model_dir))
+            torch.load(f'{model_dir}/{count}reward_model.pt')
         )
 
     def get_train_acc(self):
@@ -237,7 +238,7 @@ class RewardModel:
         sum_loss = 0.0
         for epoch in range(num_epochs):
             # model parameter 초기화
-            self.opt.zero_grad()
+
             loss = 0.0
             # 마지막 인덱스를 계산하는 방법 (if epoch = 1 이면 128 * 2 이므로 256까지만 데이터를 다룸)
             last_index = (epoch + 1) * self.train_batch_size
@@ -245,15 +246,12 @@ class RewardModel:
             if last_index > max_len:
                 last_index = max_len
 
-                # get random batch
-                # total_batch_index에서 랜덤한 index를 추출한다.
             idxs = total_batch_index[epoch * self.train_batch_size:last_index]
             sa_t_1_t = sa_t_1[idxs]
             sa_t_2_t = sa_t_2[idxs]
             labels_t = labels[idxs]
 
-            # get logits
-            # 각각의 상태-액션 쌍의 보상 값을 계산함 (앙상블의 보상 값들을 같이 구해서 평균을 구함)
+
             r_hat1 = self.r_hat_model(sa_t_1_t)
             r_hat2 = self.r_hat_model(sa_t_2_t)
             # axis=1 이므로 행을 기준으로 합 계산.
@@ -265,7 +263,10 @@ class RewardModel:
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
-            loss += curr_loss
+            regularity1 = torch.norm(self.model.layer1.weight, p=1)
+            regularity2 = torch.norm(self.model.layer2.weight, p=1)
+            regularity3 = torch.norm(self.model.layer3.weight, p=1)
+            loss += (curr_loss + regularity1.item() + regularity2.item() + regularity3.item())
             sum_loss += curr_loss.item()
             # 현재 계산된 curr_loss 값을 int로 변환하여 저장
 
@@ -278,9 +279,12 @@ class RewardModel:
             #         filtered_labels_len += 1
             #         if label == predicted[idx]:
             #             correct += 1
+            self.opt.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
             self.opt.step()
         # accuracy = correct / filtered_labels_len
+        print(r_hat1, r_hat2)
         # return accuracy
         return sum_loss/self.train_batch_size
 

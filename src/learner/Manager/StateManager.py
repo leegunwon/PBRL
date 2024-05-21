@@ -328,12 +328,15 @@ class StateManager:
             s[i] = s[i] / max_time
         for machine in r_list:
             s += cls.change_job_type_to_num(r_list[machine].setup_status)
-        for job in j_list:  # job 이름과 operation이름 찾기
-            if j_list[job].status == "DONE":
+        for job in j_list.items():  # job 이름과 operation이름 찾기
+            if job[1].status == "DONE":
                 number_of_job_done += 1
 
         s.append(number_of_job_done / len(j_list))
-        s.append((setup_change_counts + 1)/ (number_of_job_done + 1))
+        if number_of_job_done == 0:
+            s.append(0.0)
+        else:
+            s.append((setup_change_counts)/(number_of_job_done))
 
         df = pd.Series(s)
         s = df.to_numpy()
