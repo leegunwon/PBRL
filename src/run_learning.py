@@ -33,7 +33,7 @@ class Run_Simulator:
 
         print("set complete")
 
-    def  main(self, mode, algorithm):
+    def main(self, mode, algorithm):
         logging.info(f"mode: {mode}")
         logging.info(f"algoritm: {algorithm}")
         if mode == "learning":
@@ -84,9 +84,13 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
+    for i in range(4):
+        simulator.main(mode="make_dataset", algorithm="reward_model")
+        simulator.main(mode="label_generator", algorithm="reward_model")
+        PBRL.learn_reward(-1)
     simulator.main(mode="learning", algorithm="reward_model")
     simulator.main(mode="learning", algorithm="PBRL")
-    simulator.main(mode="evaluate", algorithm="PBRL")
+    # simulator.main(mode="evaluate", algorithm="PBRL")
 
 
 

@@ -64,6 +64,9 @@ class PBRL:
         if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt") and (Hyperparameters.mode != 1):
             params = torch.load(f"{save_directory}{os.sep}{count}q_net_param.pt")
             q.load_state_dict(params)
+        if os.path.exists(f"{save_directory}{os.sep}{-1}q_net_param.pt") and (Hyperparameters.mode == 1):
+            params = torch.load(f"{save_directory}{os.sep}{-1}q_net_param.pt")
+            q.load_state_dict(params)
         # cls.learn_reward()
 
         for n_epi in range(Hyperparameters.episode):
