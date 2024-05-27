@@ -61,9 +61,11 @@ class PBRL:
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
         cls.load_reward_model(count)
+
         if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt") and (Hyperparameters.mode != 1):
             params = torch.load(f"{save_directory}{os.sep}{count}q_net_param.pt")
             q.load_state_dict(params)
+
         if os.path.exists(f"{save_directory}{os.sep}{-1}q_net_param.pt") and (Hyperparameters.mode == 1):
             params = torch.load(f"{save_directory}{os.sep}{-1}q_net_param.pt")
             q.load_state_dict(params)
@@ -146,6 +148,8 @@ class PBRL:
             fig.write_html(
                 f"{pathConfig.PBRL_result_chart_path}{os.sep}{count}_score.html")
 
+            return r_squared
+
     @classmethod
     def evaluate(cls, count):
         """
@@ -185,7 +189,7 @@ class PBRL:
             Flow_time, machine_util, util, makespan, tardiness, lateness, t_max, q_time_true, q_time_false, q_job_t, q_job_f, q_time, rtf = env.performance_measure()
             env.gantt_chart()
             print(util)
-            print(score)
+
 
 
     @classmethod

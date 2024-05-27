@@ -11,9 +11,9 @@ class GanttChart:
     gantt_history = pd.DataFrame([], columns=['Type', 'JOB_ID', 'Task', 'Start', 'Finish', 'Resource', 'Rule', 'Step',
                                               'Q_diff', 'sample_action'])
     step = 0
-    color_by_color_mapper = {'j01': '#FFDDEE', 'j02': '#EEDDFF',
-                             'j03': '#FFFFDD', 'j04': '#DDF9FF',
-                             'j05': '#B8F5CC'}
+    color_by_color_mapper = {'j01': '#FFD700 ', 'j02': '#1E90FF ',
+                             'j03': '#FF69B4 ', 'j04': '#00CED1',
+                             'j05': '#9370DB '}
     dataset_id = ""
 
     host = Parameters.db_setting["host"]

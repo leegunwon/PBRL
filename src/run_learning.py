@@ -6,6 +6,7 @@ from src.learner.Algorithm.DDQN import *
 from src.learner.Algorithm.PBRL import PBRL
 from src.save_data.data_generator.compare_chart import *
 from src.save_data.data_generator.data_generator import *
+import plotly.graph_objects as go
 import yaml
 import logging
 import os
@@ -50,8 +51,12 @@ class Run_Simulator:
                 ppo = PPO()
                 ppo.main()
             elif algorithm == 'PBRL':
+                r_sqrd = []
                 for rep in range(10):
-                    PBRL.main(rep)
+                    r_sqrd.append(PBRL.main(rep))
+                fig = go.Figure(data=go.Bar(x=list(range(10)), y=r_sqrd))
+                fig.write_html(f"{pathConfig.pathh}/x_chart")
+
             elif algorithm == 'reward_model':
                 # reward_model 학습 및 생성
                 for j in range(10):
@@ -71,7 +76,7 @@ class Run_Simulator:
 
         elif mode == "make_dataset":
             Hyperparameters.mode = 1
-            PBRL.main(0)
+            PBRL.main(-1)
 
         elif mode == "labeling":
             app_run()
@@ -84,13 +89,14 @@ if True:
     simulator = Run_Simulator()
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    for i in range(4):
-        simulator.main(mode="make_dataset", algorithm="reward_model")
-        simulator.main(mode="label_generator", algorithm="reward_model")
+
+    for i in range(6):
+        simulator.main(mode="make_dataset", algorithm="PBRL")
+        simulator.main(mode="label_generator", algorithm="PBRL")
         PBRL.learn_reward(-1)
     simulator.main(mode="learning", algorithm="reward_model")
     simulator.main(mode="learning", algorithm="PBRL")
-    # simulator.main(mode="evaluate", algorithm="PBRL")
+    simulator.main(mode="evaluate", algorithm="PBRL")
 
 
 

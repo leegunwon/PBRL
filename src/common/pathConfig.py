@@ -16,6 +16,7 @@ class pathConfig:
     reinforcement_model_params_path = ""
     PBRL_result_chart_path = ""
     PBRL_result_gantt_chart_path = ""
+    pathh =""
     os = "/"
 
     @classmethod
@@ -36,3 +37,4 @@ class pathConfig:
         cls.unlabeled_data_path = f"{cls.absolute_path}{os.sep}save_data{os.sep}unlabeled_data"
         cls.PBRL_result_chart_path = f"{cls.absolute_path}{os.sep}simulator_result{os.sep}PBRL_result"
         cls.PBRL_result_gantt_chart_path = f"{cls.absolute_path}{os.sep}simulator_result{os.sep}PBRL_result{os.sep}gantt_result"
+        cls.pathh = f"{cls.absolute_path}"

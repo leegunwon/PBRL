@@ -34,10 +34,10 @@ class SimpleNN(nn.Module):
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        # x = torch.tanh(self.layer1(x))
-        # x = torch.tanh(self.layer2(x))
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
+        x = torch.tanh(self.layer1(x))
+        x = torch.tanh(self.layer2(x))
+        # x = F.relu(self.layer1(x))
+        # x = F.relu(self.layer2(x))
         x = self.layer3(x)  # 직접적인 선형 변환 결과를 반환
         return x
 
