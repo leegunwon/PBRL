@@ -56,6 +56,7 @@ class Run_Simulator:
                     r_sqrd.append(PBRL.main(rep))
                 fig = go.Figure(data=go.Bar(x=list(range(10)), y=r_sqrd))
                 fig.write_html(f"{pathConfig.pathh}/x_chart")
+                fig.show()
 
             elif algorithm == 'reward_model':
                 # reward_model 학습 및 생성
@@ -90,14 +91,13 @@ if True:
     # mode : labeling, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
 
-    for i in range(6):
-        simulator.main(mode="make_dataset", algorithm="PBRL")
-        simulator.main(mode="label_generator", algorithm="PBRL")
-        PBRL.learn_reward(-1)
-    simulator.main(mode="learning", algorithm="reward_model")
+    # for i in range(6):
+    #     simulator.main(mode="make_dataset", algorithm="PBRL")
+    #     simulator.main(mode="label_generator", algorithm="PBRL")
+    #     PBRL.learn_reward(-1)
     simulator.main(mode="learning", algorithm="PBRL")
-    simulator.main(mode="evaluate", algorithm="PBRL")
-
+    for i in range(10):
+        PBRL.evaluate(i)
 
 
 # gantt chart 쑬 것인지

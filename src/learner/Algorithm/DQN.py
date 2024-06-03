@@ -72,6 +72,8 @@ class DQN:
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
                                                                                  True, makespan_list, util_list,
                                                                                  score_list)
+                q_target.load_state_dict(q.state_dict())
+
             # env.gantt_chart()
 
             # 학습구간

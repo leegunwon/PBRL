@@ -42,7 +42,6 @@ class SimpleNN(nn.Module):
         return x
 
 
-
 class RewardModel:
     def __init__(self, ds, da, lr=3e-4, size_sample_action=1,
                  max_size=2000, capacity=5e5):
@@ -263,10 +262,7 @@ class RewardModel:
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
-            regularity1 = torch.norm(self.model.layer1.weight, p=1)
-            regularity2 = torch.norm(self.model.layer2.weight, p=1)
-            regularity3 = torch.norm(self.model.layer3.weight, p=1)
-            loss += (curr_loss + regularity1.item() + regularity2.item() + regularity3.item())
+            loss += curr_loss
             sum_loss += curr_loss.item()
             # 현재 계산된 curr_loss 값을 int로 변환하여 저장
 
@@ -281,7 +277,6 @@ class RewardModel:
             #             correct += 1
             self.opt.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
             self.opt.step()
         # accuracy = correct / filtered_labels_len
         print(r_hat1, r_hat2)

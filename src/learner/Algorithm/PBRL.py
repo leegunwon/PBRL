@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import torch.nn.functional as F
 import torch.optim as optim
@@ -59,6 +61,7 @@ class PBRL:
         util_list = []
         optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
+        check_point = 0
         # model load
         cls.load_reward_model(count)
 
@@ -100,17 +103,19 @@ class PBRL:
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
                                                                                  True, makespan_list, util_list,
                                                                                  score_list)
+                q_target.load_state_dict(q.state_dict())
+
+            if Hyperparameters.mode != 1 and n_epi >= 900:
+                params = q.state_dict()
+                file_name = f"{check_point}q_net_param.pt"
+                file_path = os.path.join(f"{pathConfig.reinforcement_model_params_path}{os.sep}{count}", file_name)
+                torch.save(params, file_path)
+                check_point += 1
 
         cls.reward_model.data_save()
 
         if Hyperparameters.mode != 1:
-            params = q.state_dict()
-            file_name = f"{count}q_net_param.pt"
-            file_path = os.path.join(save_directory, file_name)
-            torch.save(params, file_path)
-
             score_list = cls.normalize(score_list)
-
             fig = make_subplots(rows=1, cols=2)
             df = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
             fig1 = px.scatter(df, x='x', y='score', trendline='ols', title='Score')
@@ -167,12 +172,14 @@ class PBRL:
         q_target.load_state_dict(q.state_dict())
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
         score = 0.0
-        max_uitl = 0.92
+        max_score = 0.9
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         # model load
-        if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt"):
-            params = torch.load(f"{save_directory}{os.sep}{count}q_net_param.pt")
-            q.load_state_dict(params)
+
+        for i in range(100):
+            if os.path.exists(f"{save_directory}{os.sep}{count}{os.sep}{i}q_net_param.pt"):
+                params = torch.load(f"{save_directory}{os.sep}{count}{os.sep}{i}q_net_param.pt")
+                q.load_state_dict(params)
 
             s = env.reset(Parameters.datasetId)
             done = False
@@ -187,8 +194,15 @@ class PBRL:
                 s = s_prime
                 score += r
             Flow_time, machine_util, util, makespan, tardiness, lateness, t_max, q_time_true, q_time_false, q_job_t, q_job_f, q_time, rtf = env.performance_measure()
-            env.gantt_chart()
-            print(util)
+
+            # env.gantt_chart()
+            if (score > max_score):
+                max_score = score
+                check_point = i
+                score_p = score
+        print("check_point :", check_point)
+        print("util : ", util)
+        print("score : ", score_p)
 
 
 
@@ -205,14 +219,14 @@ class PBRL:
         sa_t_2 = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da):(Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
 
-
-
         for epoch in range(Hyperparameters.reward_update):
             loss_avg = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            if loss_avg < 0.01:
+            if loss_avg < 0.1:
                 cls.save_reward_model(count)
                 break
         cls.save_reward_model(count)
+
+
     @classmethod
     def normalize(cls, data):
         min_val = min(data)
