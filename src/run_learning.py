@@ -34,7 +34,7 @@ class Run_Simulator:
 
         print("set complete")
 
-    def main(self, mode, algorithm):
+    def main(self, mode, algorithm, iteration):
         logging.info(f"mode: {mode}")
         logging.info(f"algoritm: {algorithm}")
         if mode == "learning":
@@ -52,7 +52,7 @@ class Run_Simulator:
                 ppo.main()
             elif algorithm == 'PBRL':
                 r_sqrd = []
-                for rep in range(10):
+                for rep in range(iteration):
                     r_sqrd.append(PBRL.main(rep))
                 fig = go.Figure(data=go.Bar(x=list(range(10)), y=r_sqrd))
                 fig.write_html(f"{pathConfig.pathh}/x_chart")
@@ -60,7 +60,7 @@ class Run_Simulator:
 
             elif algorithm == 'reward_model':
                 # reward_model 학습 및 생성
-                for j in range(10):
+                for j in range(iteration):
                     PBRL.learn_reward(j)
 
         elif mode == 'evaluate':
@@ -68,7 +68,7 @@ class Run_Simulator:
                 DQN.get_evaluate(f"{pathConfig.model_save_path}{os.sep}240209_233447", 100,
                                  ["sks_train_1"])
             elif algorithm == "PBRL":
-                for repp in range(10):
+                for repp in range(iteration):
                     PBRL.evaluate(repp)
 
         elif mode == "result":
@@ -95,9 +95,13 @@ if True:
     #     simulator.main(mode="make_dataset", algorithm="PBRL")
     #     simulator.main(mode="label_generator", algorithm="PBRL")
     #     PBRL.learn_reward(-1)
-    simulator.main(mode="learning", algorithm="PBRL")
-    for i in range(10):
-        PBRL.evaluate(i)
+    simulator.main(mode="learning", algorithm="reward_model", iteration=1)
+    simulator.main(mode="learning", algorithm="PBRL", iteration=1)
+    util_sum = 0
+    for i in range(1):
+        util = PBRL.evaluate(i)
+        util_sum += util
+    print(util_sum)
 
 
 # gantt chart 쑬 것인지

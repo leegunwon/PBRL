@@ -3,7 +3,7 @@ from src.common.Parameters import *
 
 class Hyperparameters:
     gamma = 0.99
-    learning_rate = 0.0001
+    learning_rate = 0.001
     batch_size = 32
     buffer_limit = 50000
     input_layer = 42
@@ -11,6 +11,10 @@ class Hyperparameters:
     episode = 1000
     exploration_episode = 2
     action_list = ["SPTSSU", "SSU", "EDD", "MST", "FIFO", "LIFO"]
+    parameter_regularization = True
+    # ReLu, tanh
+    reward_model_algorithm = "ReLu"
+    load_model = True
 
     # state_type default:8 simple:42
     ds = 42
@@ -24,9 +28,9 @@ class Hyperparameters:
     topK: 5
     mode = 4
 
-    reward_type = ""
-    state_type = ""
-    action_type = ""
+    reward_type = "simple_state"
+    state_type = "dsp_rule"
+    action_type = "util"
 
     action_count = ""
     action_dimension = ""

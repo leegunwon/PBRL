@@ -7,24 +7,8 @@ from src.save_data.data_generator.compare_chart import *
 from src.simulator.Simulator import *
 import os
 import sys
-device = 'cpu'
 
 
-def gen_net(in_size=1, out_size=1, H=128, n_layers=3, activation='tanh'):
-    net = []
-    for i in range(n_layers):
-        net.append(nn.Linear(in_size, H))
-        net.append(nn.LeakyReLU())
-        in_size = H
-    net.append(nn.Linear(in_size, out_size))
-    if activation == 'tanh':
-        net.append(nn.Tanh())
-    elif activation == 'sig':
-        net.append(nn.Sigmoid())
-    else:
-        net.append(nn.ReLU())
-
-    return net
 
 class SimpleNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -34,10 +18,12 @@ class SimpleNN(nn.Module):
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        x = torch.tanh(self.layer1(x))
-        x = torch.tanh(self.layer2(x))
-        # x = F.relu(self.layer1(x))
-        # x = F.relu(self.layer2(x))
+        if Hyperparameters.reward_model_algorithm == "tanh":
+            x = torch.tanh(self.layer1(x))
+            x = torch.tanh(self.layer2(x))
+        elif Hyperparameters.reward_model_algorithm == "ReLu":
+            x = F.relu(self.layer1(x))
+            x = F.relu(self.layer2(x))
         x = self.layer3(x)  # 직접적인 선형 변환 결과를 반환
         return x
 
@@ -75,7 +61,6 @@ class RewardModel:
         앙상블 뉴럴넷 구조를 사용
         de : 사용할 앙상블 뉴럴넷 갯수
         """
-
         self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=256, output_size=1)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
@@ -121,13 +106,9 @@ class RewardModel:
             df.to_csv(f"{pathConfig.unlabeled_data_path}{os.sep}inputs{i}.csv", index=True)
 
     def r_hat_model(self, x):
-        # the network parameterizes r hat in eqn 1 from the paper
-        return self.model(torch.from_numpy(x).float().to(device))
-
-
+        return self.model(torch.from_numpy(x).float())
     def r_hat(self, x):
-        r_hats = self.r_hat_model(x).detach().cpu().numpy()
-        return r_hats
+        return self.r_hat_model(x).detach().numpy()
 
     def save(self, model_dir, count):
         torch.save(
@@ -139,81 +120,16 @@ class RewardModel:
             torch.load(f'{model_dir}/{count}reward_model.pt')
         )
 
-    def get_train_acc(self):
-        max_len = self.capacity if self.buffer_full else self.buffer_index
-        total_batch_index = np.random.permutation(max_len)
-        batch_size = 256
-        num_epochs = int(np.ceil(max_len / batch_size))
 
-        total = 0
-        for epoch in range(num_epochs):
-            last_index = (epoch + 1) * batch_size
-            if (epoch + 1) * batch_size > max_len:
-                last_index = max_len
-
-            sa_t_1 = self.buffer_seg1[epoch * batch_size:last_index]
-            sa_t_2 = self.buffer_seg2[epoch * batch_size:last_index]
-            labels = self.buffer_label[epoch * batch_size:last_index]
-            labels = torch.from_numpy(labels.flatten()).long().to(device)
-            total += labels.size(0)
-            # get logits
-            r_hat1 = self.r_hat_model(sa_t_1)
-            r_hat2 = self.r_hat_model(sa_t_2)
-            r_hat1 = r_hat1.sum(axis=1)
-            r_hat2 = r_hat2.sum(axis=1)
-            r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
-            _, predicted = torch.max(r_hat.data, 1)
-            correct = (predicted == labels).sum().item()
-
-        return correct
-
-    def put_queries(self, sa_t_1, sa_t_2, labels):
-        total_sample = sa_t_1.shape[0]
-        next_index = self.buffer_index + total_sample
-        if next_index >= self.capacity:
-            self.buffer_full = True
-            maximum_index = self.capacity - self.buffer_index
-            np.copyto(self.buffer_seg1[self.buffer_index:self.capacity], sa_t_1[:maximum_index])
-            np.copyto(self.buffer_seg2[self.buffer_index:self.capacity], sa_t_2[:maximum_index])
-            np.copyto(self.buffer_label[self.buffer_index:self.capacity], labels[:maximum_index])
-
-            remain = total_sample - (maximum_index)
-            if remain > 0:
-                np.copyto(self.buffer_seg1[0:remain], sa_t_1[maximum_index:])
-                np.copyto(self.buffer_seg2[0:remain], sa_t_2[maximum_index:])
-                np.copyto(self.buffer_label[0:remain], labels[maximum_index:])
-
-            self.buffer_index = remain
-        else:
-            np.copyto(self.buffer_seg1[self.buffer_index:next_index], sa_t_1)
-            np.copyto(self.buffer_seg2[self.buffer_index:next_index], sa_t_2)
-            np.copyto(self.buffer_label[self.buffer_index:next_index], labels)
-            self.buffer_index = next_index
-
+    def compute_l2_loss(self, model):
+        l2_loss = torch.tensor(0.0, requires_grad=True)
+        for param in model.parameters():
+            l2_loss = l2_loss + torch.norm(param, 2) ** 2
+        return l2_loss
 
     def get_label(self):
         df = pd.read_csv(f"{pathConfig.labeled_data_path}{os.sep}labeled_data.csv", index_col=0)
         return df
-        # return sa_t_1, sa_t_2, labels
-
-    def uniform_sampling(self):
-        """
-        mode 2에서 활용
-        생성한 labeled data를 불러옴
-        sa_t_1과 sa_t_2 label에 불러온 데이터를 저장해줌
-        put_query 함수를 통해서 sa_t_1, sa_t_2, label을 buffer로 다시 저장함
-        buffer train 단계에서 buffer에 저장된 데이터로 학습을 수행함
-        :return:
-        """
-        df = pd.read_csv(f"labeled_data", index_col=0)
-
-        # get labels
-        # sa_t_1, sa_t_2, labels = self.get_label(sa_t_1, sa_t_2)
-
-        # if len(labels) > 0:
-            # self.put_queries(sa_t_1, sa_t_2, labels)
-        # return len(labels)
-        return 10
     def train_reward(self, sa_t_1, sa_t_2, labels):
         """
         train reward model
@@ -228,16 +144,12 @@ class RewardModel:
         filtered_labels_len = 0
         # 총
         total_batch_index = np.random.permutation(max_len)
-            # 0 ~ max_len -1 사이의 리스트를 [0, 1, ... max_len-1] 랜덤으로 섞음.
-            # 각 앙상블 멤버가 규칙적인 데이터 순서를 학습하지 않도록 랜덤으로 데이터를 학습하도록 함.
-        # 소숫점을 올림함.
-        # 전체 데이터를 학습하기 위해 몇번 반복해야할 지 계산
+
         num_epochs = int(np.ceil(max_len / self.train_batch_size))
 
         sum_loss = 0.0
         for epoch in range(num_epochs):
             # model parameter 초기화
-
             loss = 0.0
             # 마지막 인덱스를 계산하는 방법 (if epoch = 1 이면 128 * 2 이므로 256까지만 데이터를 다룸)
             last_index = (epoch + 1) * self.train_batch_size
@@ -250,36 +162,37 @@ class RewardModel:
             sa_t_2_t = sa_t_2[idxs]
             labels_t = labels[idxs]
 
-
             r_hat1 = self.r_hat_model(sa_t_1_t)
             r_hat2 = self.r_hat_model(sa_t_2_t)
-            # axis=1 이므로 행을 기준으로 합 계산.
+
             r_hat1 = r_hat1.sum(axis=1)
             r_hat2 = r_hat2.sum(axis=1)
-            # 각각의 요소 별로 더함
-            #  a: tensor([[1, 2],  b : tensor([[5, 6],  cat([a, b] axis=-1 tensor([[1, 2, 5, 6],
-            #            [3, 4]])             [7, 8]])                            [3, 4, 7, 8]])
+
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
-            loss += curr_loss
             sum_loss += curr_loss.item()
+            loss += curr_loss
+            if Hyperparameters.parameter_regularization == True:
+                l2_loss = self.compute_l2_loss(self.model)
+                loss = curr_loss + 0.0001 * l2_loss
             # 현재 계산된 curr_loss 값을 int로 변환하여 저장
 
             # compute acc
-            # _, predicted = torch.max(r_hat.data, 1)
-            # labels_t = torch.tensor(labels_t).flatten()
-            # for idx in range(len(labels_t)):
-            #     label = labels_t[idx]
-            #     if label != 0.5:
-            #         filtered_labels_len += 1
-            #         if label == predicted[idx]:
-            #             correct += 1
+            _, predicted = torch.max(r_hat.data, 1)
+            labels_t = torch.tensor(labels_t).flatten()
+            for idx in range(len(labels_t)):
+                label = labels_t[idx]
+                if label != 0.5:
+                    filtered_labels_len += 1
+                    if label == predicted[idx]:
+                        correct += 1
             self.opt.zero_grad()
             loss.backward()
             self.opt.step()
-        # accuracy = correct / filtered_labels_len
-        print(r_hat1, r_hat2)
+        accuracy = correct / filtered_labels_len
+
+        print(r_hat1[0])
+        print(accuracy)
         # return accuracy
         return sum_loss/self.train_batch_size
-

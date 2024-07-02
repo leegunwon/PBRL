@@ -9,10 +9,10 @@ class Qnet(nn.Module):  # Qnet
         super(Qnet, self).__init__()
         self.input_layer = input_layer
         self.output_layer = output_layer
-        self.fc1 = nn.Linear(self.input_layer, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, self.output_layer)
+        self.fc1 = nn.Linear(self.input_layer, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, 64)
+        self.fc4 = nn.Linear(64, self.output_layer)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
