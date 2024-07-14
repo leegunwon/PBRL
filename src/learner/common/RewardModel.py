@@ -18,15 +18,43 @@ class SimpleNN(nn.Module):
         self.layer3 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        if Hyperparameters.reward_model_algorithm == "tanh":
+        if Hyperparameters.reward_model_activation_function == "sigmoid":
+            x = F.sigmoid(self.layer1(x))
+            x = F.sigmoid(self.layer2(x))
+
+        elif Hyperparameters.reward_model_activation_function == "tanh":
             x = torch.tanh(self.layer1(x))
             x = torch.tanh(self.layer2(x))
-        elif Hyperparameters.reward_model_algorithm == "ReLu":
+
+        elif Hyperparameters.reward_model_activation_function == "ReLU":
             x = F.relu(self.layer1(x))
             x = F.relu(self.layer2(x))
+
+        elif Hyperparameters.reward_model_activation_function == "leaky_ReLU":
+            x = F.leaky_relu(self.layer1(x), negative_slope=0.01)
+            x = F.leaky_relu(self.layer2(x), negative_slope=0.01)
+
+        elif Hyperparameters.reward_model_activation_function == "ELU":
+            x = F.elu(self.layer1(x), alpha=1.0)
+            x = F.elu(self.layer2(x), alpha=1.0)
+
+        elif Hyperparameters.reward_model_activation_function == "SELU":
+            x = F.selu(self.layer1(x))
+            x = F.selu(self.layer2(x))
+
+        elif Hyperparameters.reward_model_activation_function == "GELU":
+            x = F.gelu(self.layer1(x))
+            x = F.gelu(self.layer2(x))
+
+        elif Hyperparameters.reward_model_activation_function == "Softplus":
+            x = F.softplus(self.layer1(x))
+            x = F.softplus(self.layer2(x))
+
+        elif Hyperparameters.reward_model_activation_function == "Swish":
+            x = self.layer1(x) * torch.sigmoid(self.layer1(x))
+            x = self.layer2(x) * torch.sigmoid(self.layer2(x))
         x = self.layer3(x)  # 직접적인 선형 변환 결과를 반환
         return x
-
 
 class RewardModel:
     def __init__(self, ds, da, lr=3e-4, size_sample_action=1,
@@ -169,10 +197,11 @@ class RewardModel:
             r_hat2 = r_hat2.sum(axis=1)
 
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
+           #  r_hat_mean = abs(sum(r_hat1) / num_epochs)
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
             sum_loss += curr_loss.item()
-            loss += curr_loss
+            loss += curr_loss # + r_hat_mean/ 10
             if Hyperparameters.parameter_regularization == True:
                 l2_loss = self.compute_l2_loss(self.model)
                 loss = curr_loss + 0.0001 * l2_loss
@@ -191,8 +220,8 @@ class RewardModel:
             loss.backward()
             self.opt.step()
         accuracy = correct / filtered_labels_len
-
-        print(r_hat1[0])
-        print(accuracy)
+        print("reward value  ", r_hat1[0].item())
+        print("loss  ", sum_loss / max_len)
+        print("accuracy  ", accuracy)
         # return accuracy
-        return sum_loss/self.train_batch_size
+        return sum_loss/max_len, accuracy

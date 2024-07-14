@@ -40,7 +40,6 @@ class PBRL:
             q_out = q(s)
             q_a = q_out.gather(1, a)
             max_q_prime = q_target(s_prime).max(1)[0].unsqueeze(1)
-            # print(max_q_prime.shape)
             target = r + Hyperparameters.gamma * max_q_prime * done_mask
             curr_loss = F.smooth_l1_loss(q_a, target)
             loss = curr_loss
@@ -81,6 +80,7 @@ class PBRL:
             done = False
             score = 0.0
             while not done:
+                # 뭐가 바뀌는 걸까? 아마도 q value가 바뀜 즉 action을
                 a = q.sample_action(torch.from_numpy(s).float(), epsilon)
                 s_prime, _, done = env.step(a)
                 inputs = np.concatenate([s, np.array([a])])
@@ -102,10 +102,10 @@ class PBRL:
             if (memory.size() > 100 and Hyperparameters.mode == 4):
                 cls.train(q, q_target, memory, optimizer)
 
-            if (n_epi % 10==0):
+            if (n_epi % 5==0):
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
-                                                                                 True, makespan_list, util_list,
-                                                                                 score_list)
+                                                                              True, makespan_list, util_list,
+                                                                              score_list)
                 q_target.load_state_dict(q.state_dict())
 
             if Hyperparameters.mode != 1 and n_epi >= 900:
@@ -118,7 +118,6 @@ class PBRL:
         cls.reward_model.data_save()
 
         if Hyperparameters.mode != 1:
-            score_list = cls.normalize(score_list)
             fig = make_subplots(rows=1, cols=2)
             df1 = pd.DataFrame({'x': list(range(1, len(score_list)+1)), 'score': score_list})
             fig1 = px.scatter(df1, x='x', y='score', trendline='ols', title='Score')
@@ -158,13 +157,13 @@ class PBRL:
             # R² 값 계산
             r_squared_1 = 1 - (ssr_1 / sst_1)
             r_squared_2 = 1 - (ssr_2 / sst_2)
-            fig.update_layout(title=f"left chart r_squared : {r_squared_1} right chart r_squared : {r_squared_2}")
+            fig.update_layout(title=f"left chart r_squared : {r_squared_1}           activation_function (reward_estimator) {Hyperparameters.reward_model_activation_function}    (Q_net) {Hyperparameters.Q_net_activation_function}          right chart r_squared : {r_squared_2}")
             # print("R² value: " + str(r_squared))
             # fig.show()
             fig.write_html(
                 f"{pathConfig.PBRL_result_chart_path}{os.sep}{count}_score.html")
-
-            return r_squared_2
+            # fig.show()
+            print(r_squared_2, r_squared_1)
 
     @classmethod
     def evaluate(cls, count):
@@ -189,7 +188,7 @@ class PBRL:
 
         max_score = -10000000
         for i in range(100):
-            if os.path.exists(f"{save_directory}{os.sep}{count}{os.sep}{i}q_net_param.pt"):
+            if (os.path.exists(f"{save_directory}{os.sep}{count}{os.sep}{i}q_net_param.pt")):
                 params = torch.load(f"{save_directory}{os.sep}{count}{os.sep}{i}q_net_param.pt")
                 q.load_state_dict(params)
 
@@ -221,10 +220,7 @@ class PBRL:
 
     @classmethod
     def learn_reward(cls, count):
-        """
-        Learn reward
-        :return:
-        """
+        time1 = time.time()
         if Hyperparameters.load_model:
             cls.load_reward_model(count)
         # labeled data 불러와서 train_reward 작업만 하자
@@ -234,11 +230,11 @@ class PBRL:
         labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
 
         for epoch in range(Hyperparameters.reward_update):
-            loss_avg = cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            if loss_avg < 1:
-                cls.save_reward_model(count)
-                break
+            cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
+            print("epoch", epoch)
         cls.save_reward_model(count)
+        time2 = time.time()
+        print("time :", time2 - time1)
 
     @classmethod
     def normalize(cls, data):
@@ -253,7 +249,7 @@ class PBRL:
         output_string = "--------------------------------------------------\n" + \
                         f"util : {util:.3f}\n" + \
                         f"n_episode: {n_epi}, score : {score:.1f}, eps : {epsilon * 100:.1f}%"
-        print(output_string)
+        # print(output_string)
         if type:
             makespan_list.append(makespan)
             util_list.append(util)

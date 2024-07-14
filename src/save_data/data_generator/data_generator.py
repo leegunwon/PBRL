@@ -4,7 +4,7 @@ from src.simulator.Simulator import *
 from src.common.pathConfig import *
 from src.common.pathConfig import *
 def generate_label():
-    print("labeling on")
+    print("labeling start")
     size_sample_action = Hyperparameters.size_sample_action
     file_path = f"{pathConfig.labeled_data_path}{os.sep}labeled_data.csv"
     if os.path.exists(file_path):
@@ -55,19 +55,3 @@ def generate_label():
     df.to_csv(f"{pathConfig.labeled_data_path}{os.sep}labeled_data.csv", index=True)
     print("labeling end")
 
-
-
-def delete_file(file_path):
-    # 파일이 존재하는지 확인
-    if os.path.exists(file_path):
-        # 파일 삭제
-        os.remove(file_path)
-        print(f"{file_path} 파일이 삭제되었습니다.")
-    else:
-        # 파일이 없을 경우
-        print(f"{file_path} 파일을 찾을 수 없습니다.")
-
-def file_reset():
-    delete_file(pathConfig.reward_model_params_path)
-    delete_file(pathConfig.reinforcement_model_params_path)
-    delete_file(pathConfig.labeled_data_path)

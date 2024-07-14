@@ -67,8 +67,6 @@ class DQN:
                 if done:
                     break
             if (n_epi%10==0):
-                if max_score < abs(score):
-                    max_score = abs(score)
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
                                                                                  True, makespan_list, util_list,
                                                                                  score_list)
@@ -98,6 +96,7 @@ class DQN:
             fig.add_trace(trace, row=1, col=1)
         for trace in fig2.data:
             fig.add_trace(trace, row=1, col=2)
+        fig.show()
         print("학습이 종료되었습니다")
 
     @classmethod

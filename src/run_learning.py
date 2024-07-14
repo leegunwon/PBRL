@@ -54,9 +54,7 @@ class Run_Simulator:
                 r_sqrd = []
                 for rep in range(iteration):
                     r_sqrd.append(PBRL.main(rep))
-                fig = go.Figure(data=go.Bar(x=list(range(10)), y=r_sqrd))
-                fig.write_html(f"{pathConfig.pathh}/x_chart")
-                fig.show()
+                print(r_sqrd)
 
             elif algorithm == 'reward_model':
                 # reward_model 학습 및 생성
@@ -79,7 +77,7 @@ class Run_Simulator:
             Hyperparameters.mode = 1
             PBRL.main(-1)
 
-        elif mode == "labeling":
+        elif mode == "query_program":
             app_run()
 
         elif mode == "label_generator":
@@ -88,20 +86,16 @@ class Run_Simulator:
 
 if True:
     simulator = Run_Simulator()
-    # mode : labeling, evaluate, learning, result, make_dataset, label_generator
+    # mode : query_program, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-
-    # for i in range(6):
-    #     simulator.main(mode="make_dataset", algorithm="PBRL")
-    #     simulator.main(mode="label_generator", algorithm="PBRL")
-    #     PBRL.learn_reward(-1)
-    simulator.main(mode="learning", algorithm="reward_model", iteration=1)
-    simulator.main(mode="learning", algorithm="PBRL", iteration=1)
-    util_sum = 0
-    for i in range(1):
-        util = PBRL.evaluate(i)
-        util_sum += util
-    print(util_sum)
+    iteration_count = 10
+    # simulator.main(mode="learning", algorithm="reward_model", iteration=iteration_count)
+    simulator.main(mode="learning", algorithm="PBRL", iteration=iteration_count)
+    # util_sum = 0
+    # for i in range(iteration_count):
+    #     util = PBRL.evaluate(i)
+    #     util_sum += util
+    # print(util_sum)
 
 
 # gantt chart 쑬 것인지
