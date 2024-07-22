@@ -24,6 +24,8 @@ class Resource(object):
         self.setup_time_table = setup_time_table  # {j01 : {"j02" : 5, ...} , ...}
         # For History
         self.history_list = []
+        # job_type 1 -> 0번 인덱스 1번을 1번 하면 1, 0, 0, 0, 0 2번하면 2, 0, 0, 0, 0
+        # self.counter = [0, 0, 0, 0, 0]
 
     def assign_setting(self, job, reservation_time):
         self.status = "PROCESSING"

@@ -75,7 +75,9 @@ class Run_Simulator:
 
         elif mode == "make_dataset":
             Hyperparameters.mode = 1
-            PBRL.main(-1)
+            for repp in range(iteration):
+                PBRL.main(-1)
+                generate_label()
 
         elif mode == "query_program":
             app_run()
@@ -88,7 +90,8 @@ if True:
     simulator = Run_Simulator()
     # mode : query_program, evaluate, learning, result, make_dataset, label_generator
     # algorithm : reward_model, dqn, PBRL
-    iteration_count = 10
+    iteration_count = 1
+    # simulator.main(mode="make_dataset", algorithm="PBRL", iteration=iteration_count)
     # simulator.main(mode="learning", algorithm="reward_model", iteration=iteration_count)
     simulator.main(mode="learning", algorithm="PBRL", iteration=iteration_count)
     # util_sum = 0

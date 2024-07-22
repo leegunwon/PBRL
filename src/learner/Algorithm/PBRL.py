@@ -54,6 +54,7 @@ class PBRL:
         1 : random하게 시뮬레이션을 수행하고 그 결과를 memory에 저장
         2 :
         """
+        print("main function run")
         env = Simulator
         q = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         q_target = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
@@ -66,19 +67,21 @@ class PBRL:
         save_directory = f"{pathConfig.reinforcement_model_params_path}"
         check_point = 0
         # model load
-        cls.load_reward_model(count)
+        if (Hyperparameters.load_model == True):
+            cls.load_reward_model(count)
 
-        if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt") and (Hyperparameters.mode != 1):
+        if os.path.exists(f"{save_directory}{os.sep}{count}q_net_param.pt") and (Hyperparameters.mode != 1) and Hyperparameters.load_model == True:
             params = torch.load(f"{save_directory}{os.sep}{count}q_net_param.pt")
             q.load_state_dict(params)
 
         # cls.learn_reward()
-
         for n_epi in range(Hyperparameters.episode):
             epsilon = max(0.01, 0.8 - 0.9/Hyperparameters.episode * n_epi)
             s = env.reset(Parameters.datasetId)
+            epsilon_test = 0
             done = False
             score = 0.0
+            score_sub = 0.0
             while not done:
                 # 뭐가 바뀌는 걸까? 아마도 q value가 바뀜 즉 action을
                 a = q.sample_action(torch.from_numpy(s).float(), epsilon)
@@ -228,7 +231,7 @@ class PBRL:
         sa_t_1 = df.iloc[:, 0: (Hyperparameters.ds + Hyperparameters.da)].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         sa_t_2 = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da):(Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
-
+        print(len(labels))
         for epoch in range(Hyperparameters.reward_update):
             cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
             print("epoch", epoch)

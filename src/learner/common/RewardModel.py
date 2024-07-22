@@ -79,7 +79,7 @@ class RewardModel:
 
         self.construct_model()  # 앙상블 생성
         self.inputs = []  # 입력 데이터 리스트
-        self.train_batch_size = 128  # 학습 미니배치 크기
+        self.train_batch_size = 64  # 학습 미니배치 크기
         self.CEloss = nn.CrossEntropyLoss()  # 교차 엔트로피 손실 함수
 
         self.count = 0
@@ -89,7 +89,7 @@ class RewardModel:
         앙상블 뉴럴넷 구조를 사용
         de : 사용할 앙상블 뉴럴넷 갯수
         """
-        self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=256, output_size=1)
+        self.model = SimpleNN(input_size=self.ds + self.da, hidden_size=64, output_size=1)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
     def add_data(self, obs, act, done):
@@ -197,11 +197,11 @@ class RewardModel:
             r_hat2 = r_hat2.sum(axis=1)
 
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
-           #  r_hat_mean = abs(sum(r_hat1) / num_epochs)
+            #  r_hat_mean = abs(sum(r_hat1) / num_epochs)
             # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
             sum_loss += curr_loss.item()
-            loss += curr_loss # + r_hat_mean/ 10
+            loss += curr_loss #  + r_hat_mean/ 10
             if Hyperparameters.parameter_regularization == True:
                 l2_loss = self.compute_l2_loss(self.model)
                 loss = curr_loss + 0.0001 * l2_loss

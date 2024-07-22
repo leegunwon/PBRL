@@ -316,11 +316,27 @@ class StateManager:
         return job_type_num
 
     @classmethod
+    def count_job_type(cls, job_type, counter):
+        if job_type == 'j01':
+            counter[0] += 1
+        elif job_type == 'j02':
+            counter[1] += 1
+        elif job_type == 'j03':
+            counter[2] += 1
+        elif job_type == 'j04':
+            counter[3] += 1
+        elif job_type == 'j05':
+            counter[4] += 1
+
+        return counter
+
+    @classmethod
     def set_state_simple(cls, j_list, r_list, curr_time, setup_change_counts):
         # 각 머신에 할당되어 있는 lot의 종료 시간
+        # 각 머신에 할당된 job type
         s = []
         number_of_job_done = 0
-
+        counter = [0, 0, 0, 0, 0]
         for machine in r_list:
             s.append(r_list[machine].reservation_time)
         max_time = max(s)
@@ -328,11 +344,15 @@ class StateManager:
             s[i] = s[i] / max_time
         for machine in r_list:
             s += cls.change_job_type_to_num(r_list[machine].setup_status)
+            util = r_list[machine].cal_util2()
+            s.append(util)  # 7~16
+
         for job in j_list.items():  # job 이름과 operation이름 찾기
             if job[1].status == "DONE":
                 number_of_job_done += 1
+                counter = cls.count_job_type(job[1].job_type, counter)
+        s += counter
 
-        s.append(number_of_job_done / len(j_list))
         if number_of_job_done == 0:
             s.append(0.0)
         else:
