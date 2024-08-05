@@ -141,10 +141,10 @@ class PBRL:
             predictions_2 = np.interp(df2['score'], trendline_x, trendline_y)
 
             # 첫 번째 subplot의 x축 텍스트 크기 조정
-            fig.update_xaxes(title_text="Episode", tickfont=dict(size=40), row=1, col=1)
-            fig.update_xaxes(title_text="Score", tickfont=dict(size=40), row=1, col=2)
-            fig.update_yaxes(title_text="Score", tickfont=dict(size=40), row=1, col=1)
-            fig.update_yaxes(title_text="Utilization", tickfont=dict(size=40), row=1, col=2)
+            fig.update_xaxes(title_text="Episode", tickfont=dict(size=72), row=1, col=1)
+            fig.update_xaxes(title_text="Score", tickfont=dict(size=72), row=1, col=2)
+            fig.update_yaxes(title_text="Score", tickfont=dict(size=72), row=1, col=1)
+            fig.update_yaxes(title_text="Utilization", tickfont=dict(size=72), row=1, col=2)
             # 평균 값 계산
             mean_util_1 = np.mean(df1['score'])
             mean_util_2 = np.mean(df2['util'])
@@ -232,9 +232,10 @@ class PBRL:
         sa_t_2 = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da):(Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy().reshape(-1, Hyperparameters.size_sample_action, (Hyperparameters.input_layer + 1))
         labels = df.iloc[:, (Hyperparameters.ds + Hyperparameters.da) * 2].to_numpy()[::Hyperparameters.size_sample_action]
         print(len(labels))
+
+        train_accuracies, val_accuracies = [], []
         for epoch in range(Hyperparameters.reward_update):
-            cls.reward_model.train_reward(sa_t_1, sa_t_2, labels)
-            print("epoch", epoch)
+            cls.reward_model.train_reward(sa_t_1, sa_t_2, labels, train_accuracies, val_accuracies)
         cls.save_reward_model(count)
         time2 = time.time()
         print("time :", time2 - time1)

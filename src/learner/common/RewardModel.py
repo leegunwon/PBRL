@@ -158,70 +158,67 @@ class RewardModel:
     def get_label(self):
         df = pd.read_csv(f"{pathConfig.labeled_data_path}{os.sep}labeled_data.csv", index_col=0)
         return df
-    def train_reward(self, sa_t_1, sa_t_2, labels):
-        """
-        train reward model
-        사용 방법 seg1 buffer와 seg2 buffer를 채워둔 후
-        두 buffer에서 seg들을 추출해서 라벨 값과 현재 뉴럴넷이 산출하는 라벨 값을 비교하여 loss를 계산한다.
-        """
-        # ensemble의 loss들을 저장한 모양
-
-        # max_len : buffer가 채워져 있는 만큼
-        correct = 0
+    def train_reward(self, sa_t_1, sa_t_2, labels, train_accuracies, val_accuracies):
+        # 데이터 분할 및 초기화
+        validation_split = 0.2
         max_len = len(labels)
-        filtered_labels_len = 0
-        # 총
-        total_batch_index = np.random.permutation(max_len)
+        val_len = int(max_len * validation_split)
+        train_len = max_len - val_len
 
-        num_epochs = int(np.ceil(max_len / self.train_batch_size))
+        indices = np.random.permutation(max_len)
+        train_idxs = indices[:train_len]
+        val_idxs = indices[train_len:]
 
-        sum_loss = 0.0
+        sa_t_1_train, sa_t_2_train, labels_train = sa_t_1[train_idxs], sa_t_2[train_idxs], labels[train_idxs]
+        sa_t_1_val, sa_t_2_val, labels_val = sa_t_1[val_idxs], sa_t_2[val_idxs], labels[val_idxs]
+
+        num_epochs = int(np.ceil(train_len / self.train_batch_size))
+
         for epoch in range(num_epochs):
-            # model parameter 초기화
             loss = 0.0
-            # 마지막 인덱스를 계산하는 방법 (if epoch = 1 이면 128 * 2 이므로 256까지만 데이터를 다룸)
-            last_index = (epoch + 1) * self.train_batch_size
-            # total_batch_index의 크기를 벗어나면 안되니깐
-            if last_index > max_len:
-                last_index = max_len
+            start_index = epoch * self.train_batch_size
+            last_index = min(start_index + self.train_batch_size, train_len)
 
-            idxs = total_batch_index[epoch * self.train_batch_size:last_index]
-            sa_t_1_t = sa_t_1[idxs]
-            sa_t_2_t = sa_t_2[idxs]
-            labels_t = labels[idxs]
+            # IndexError 방지를 위해 범위 확인
+            if start_index >= train_len:
+                break
+
+            batch_idxs = np.arange(start_index, last_index)
+            sa_t_1_t, sa_t_2_t, labels_t = sa_t_1_train[batch_idxs], sa_t_2_train[batch_idxs], labels_train[batch_idxs]
 
             r_hat1 = self.r_hat_model(sa_t_1_t)
             r_hat2 = self.r_hat_model(sa_t_2_t)
-
-            r_hat1 = r_hat1.sum(axis=1)
-            r_hat2 = r_hat2.sum(axis=1)
+            r_hat1, r_hat2 = r_hat1.sum(axis=1), r_hat2.sum(axis=1)
 
             r_hat = torch.cat([r_hat1, r_hat2], axis=-1)
-            #  r_hat_mean = abs(sum(r_hat1) / num_epochs)
-            # cross entropy loss를 통해 실제 선호도 라벨 값과 뉴럴 넷에서 산출한 라벨 값을 비교함
             curr_loss = self.CEloss(r_hat, torch.tensor(labels_t).reshape(-1).long())
-            sum_loss += curr_loss.item()
-            loss += curr_loss #  + r_hat_mean/ 10
-            if Hyperparameters.parameter_regularization == True:
-                l2_loss = self.compute_l2_loss(self.model)
-                loss = curr_loss + 0.0001 * l2_loss
-            # 현재 계산된 curr_loss 값을 int로 변환하여 저장
+            loss += curr_loss
 
-            # compute acc
-            _, predicted = torch.max(r_hat.data, 1)
-            labels_t = torch.tensor(labels_t).flatten()
-            for idx in range(len(labels_t)):
-                label = labels_t[idx]
-                if label != 0.5:
-                    filtered_labels_len += 1
-                    if label == predicted[idx]:
-                        correct += 1
+            if Hyperparameters.parameter_regularization:
+                l2_loss = self.compute_l2_loss(self.model)
+                loss += 0.0001 * l2_loss
+
             self.opt.zero_grad()
             loss.backward()
             self.opt.step()
-        accuracy = correct / filtered_labels_len
-        print("reward value  ", r_hat1[0].item())
-        print("loss  ", sum_loss / max_len)
-        print("accuracy  ", accuracy)
-        # return accuracy
-        return sum_loss/max_len, accuracy
+
+            # 학습 데이터 정확도 계산
+            _, predicted_train = torch.max(r_hat.data, 1)
+            accuracy_train = (predicted_train == torch.tensor(labels_t).reshape(-1).long()).float().mean().item()
+            train_accuracies.append(accuracy_train)
+
+            with torch.no_grad():
+                r_hat1_val = self.r_hat_model(sa_t_1_val)
+                r_hat2_val = self.r_hat_model(sa_t_2_val)
+                r_hat1_val, r_hat2_val = r_hat1_val.sum(axis=1), r_hat2_val.sum(axis=1)
+                r_hat_val = torch.cat([r_hat1_val, r_hat2_val], axis=-1)
+
+                val_loss = self.CEloss(r_hat_val, torch.tensor(labels_val).reshape(-1).long())
+                _, predicted_val = torch.max(r_hat_val.data, 1)
+                accuracy_val = (predicted_val == torch.tensor(labels_val).reshape(-1).long()).float().mean().item()
+                val_accuracies.append(accuracy_val)
+
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {loss.item()}, Validation Loss: {val_loss.item()}, "
+                  f"Train Accuracy: {accuracy_train}, Validation Accuracy: {accuracy_val}")
+
+        return train_accuracies, val_accuracies

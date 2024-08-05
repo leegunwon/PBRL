@@ -23,7 +23,8 @@ class StateManager:
             s = cls.set_state_default(j_list, r_list, cur_runtime)
         elif Hyperparameters.state_type == 'simple_state':
             s = cls.set_state_simple(j_list, r_list, cur_runtime, setup_change_counts)
-
+        elif Hyperparameters.state_type == 'mini_state':
+            s = cls.set_mini_simple(j_list, r_list, cur_runtime, setup_change_counts)
         return s
 
     @classmethod
@@ -346,6 +347,38 @@ class StateManager:
             s += cls.change_job_type_to_num(r_list[machine].setup_status)
             util = r_list[machine].cal_util2()
             s.append(util)  # 7~16
+
+        for job in j_list.items():  # job 이름과 operation이름 찾기
+            if job[1].status == "DONE":
+                number_of_job_done += 1
+                counter = cls.count_job_type(job[1].job_type, counter)
+        s += counter
+
+        if number_of_job_done == 0:
+            s.append(0.0)
+        else:
+            s.append((setup_change_counts)/(number_of_job_done))
+
+        df = pd.Series(s)
+        s = df.to_numpy()
+
+        return s
+
+    @classmethod
+    def set_mini_simple(cls, j_list, r_list, curr_time, setup_change_counts):
+        # 각 머신에 할당되어 있는 lot의 종료 시간
+        # 각 머신에 할당된 job type
+        s = []
+        number_of_job_done = 0
+        counter = [0, 0, 0, 0, 0]
+        for machine in r_list:
+            s.append(r_list[machine].reservation_time)
+        max_time = max(s)
+        for i in range(len(s)):
+            s[i] = s[i] / max_time
+        for machine in r_list:
+            util = r_list[machine].cal_util2()
+            s.append(util)
 
         for job in j_list.items():  # job 이름과 operation이름 찾기
             if job[1].status == "DONE":

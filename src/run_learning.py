@@ -60,6 +60,7 @@ class Run_Simulator:
                 # reward_model 학습 및 생성
                 for j in range(iteration):
                     PBRL.learn_reward(j)
+                    Hyperparameters.reward_update = 1500
 
         elif mode == 'evaluate':
             if algorithm == "dqn":
@@ -92,7 +93,7 @@ if True:
     # algorithm : reward_model, dqn, PBRL
     iteration_count = 1
     # simulator.main(mode="make_dataset", algorithm="PBRL", iteration=iteration_count)
-    # simulator.main(mode="learning", algorithm="reward_model", iteration=iteration_count)
+    simulator.main(mode="learning", algorithm="reward_model", iteration=iteration_count)
     simulator.main(mode="learning", algorithm="PBRL", iteration=iteration_count)
     # util_sum = 0
     # for i in range(iteration_count):
