@@ -56,13 +56,13 @@ PBRL은 **Preference-Based Reinforcement Learning(선호 기반 강화학습)**�
   - `label_generator` : 자동으로 선호도 조사하는 프로그램 실행 (현재 두 trajectory segmentation 중 setup time이 적은 segmentation을 선택하도록 구현)
   - `generate_reward_model` : 선호도 조사 데이터를 바탕으로 reward model을 학습
 
-**algorithm** :
- 사용 가능한 알고리즘 : [DQN, DDQN, DQN_action_masking, DQN_CNN, PBRL, PPO]
- 검증된 알고리즘 [DQN, PBRL]
+- **algorithm** :
+  - 사용 가능한 알고리즘 : [DQN, DDQN, DQN_action_masking, DQN_CNN, PBRL, PPO]
+  - 검증된 알고리즘 [DQN, PBRL]
 
-**iteration** : 
- 실험을 반복해서 진행할 때 구분하기 위한 구분자
- ex) iteration=0 -> 생성되는 param 파일명 0param.pt
+- **iteration** : 
+  - 실험을 반복해서 진행할 때 구분하기 위한 구분자
+  - ex) iteration=0 -> 생성되는 param 파일명 0param.pt
 
 
 ### 3. 데이터베이스 설정
