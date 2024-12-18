@@ -108,7 +108,7 @@ simulator_result/
 **pbrl_learning_result** : learning mode 중 pbrl algorithm 학습 지표 저장
 (파일명 : [iteration]Change_in_loss_[r_squared].html)
 
-4개의 학습 지표
+**4개의 학습 지표**
 1. episode에 따른 cumulative reward 변화
 2. episode에 따른 utilization 변화
 3. cumulative reward와 utilization 간의 상관관계
