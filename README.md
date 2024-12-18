@@ -67,6 +67,7 @@ PBRL은 **Preference-Based Reinforcement Learning(선호 기반 강화학습)**�
 
 ### 3. 데이터베이스 설정
 현재 사용중인 DB 정보
+```plaintext
 db_user = 'root'
 db_password = '1234'
 db_host = 'localhost'
@@ -81,6 +82,7 @@ label_table_name = 'labeled_data'
 label_db : 사용자 선호도 조사 결과 데이터를 저장 
 ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터 
     [1번trajectory segmentation, 2번trajectory segmentation, label]
+```
 
 ### 4. 시뮬레이션 결과 확인
 
