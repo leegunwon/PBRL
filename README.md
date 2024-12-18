@@ -81,17 +81,21 @@ ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 
 
 ### 4. 시뮬레이션 결과 확인
 simulator_result/
-├── gantt_chart/                    # 간트 차트 결과 저장 디렉토리
-├── reward_model_learning_result/   # 보상 모델 학습 결과 저장 디렉토리
-├── pbrl_learning_result/           # PBRL 학습 결과 저장 디렉토리
-│   ├── matplotlib/                 # Matplotlib을 사용한 학습 시각화 결과
-│   ├── seaborn/                    # Seaborn을 사용한 학습 시각화 결과
-│   ├── plotly/                     # Plotly를 사용한 학습 시각화 결과
+- gantt_chart/                    
+- reward_model_learning_result/   
+- pbrl_learning_result/           
+  - matplotlib/                 
+  - seaborn/                    
+  - plotly/
+                 
 
 
 gantt_chart : evaluate mode 혹은 result mode를 통해 생성된 gantt chart가 저장되는 곳 (파일명 : [시뮬레이션 실행 시간][활용된 데이터 셋]_gantt.html)
+
 reward_model_learning_result : generate_reward_model mode에서 reward model을 만들 때 발생한 loss 그래프를 저장하는 곳 (파일명 : [iteration]reward_loss.html)
+
 pbrl_learning_result : learning mode 중 pbrl algorithm을 학습시켰을 때 생성되는 learning 지표를 저장하는 곳 (파일명 : [iteration]Change_in_loss_[r_squared].html)
+
 4개의 learning 지표
 1. episode에 따른 cumulative reward 변화
 2. episode에 따른 utilization 변화
