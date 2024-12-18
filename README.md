@@ -41,7 +41,7 @@ PBRL은 **Preference-Based Reinforcement Learning(선호 기반 강화학습)**�
   - `dsp_run` : 선택한 `DSP_rule`을 기반으로 시뮬레이션을 수행  
   - `DSP_rule_check` : `src/common/Parameters.py`에 정의된 `DSP_rule_check` 파라미터 값이 `True`로 설정된 모든 `DSP_rule`로 시뮬레이션을 수행
 
-**DSP_rule** :
+- **DSP_rule** :
  사용 가능한 DSP_rule : [SPT, SPTSSU, SSU, LOR, MOR, EDD , MST, FIFO, LIFO] 중 하나 선택
 
 ### 2. 학습 시뮬레이션 동작
