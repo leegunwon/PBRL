@@ -51,7 +51,8 @@ mode :
  evaluate : 선택된 강화학습 알고리즘으로 학습된 에이전트의 학습 결과를 평가
  result : 선택한 에이전트를 사용한 시뮬레이션 결과 확인
  query_program : 사용자 선호도 조사 프로그램 실행
- label_generator : 자동으로 선호도 조사하는 프로그램 실행 (현재 두 trajectory segmentation 중 setup time이 적은 segementation을 선택하도록 구현)
+ label_generator : 자동으로 선호도 조사하는 프로그램 실행 
+ (현재 두 trajectory segmentation 중 setup time이 적은 segementation을 선택하도록 구현)
  generate_reward_model : 선호도 조사 데이터를 바탕으로 reward model을 학습
 
 algorithm :
@@ -77,7 +78,8 @@ sim_db : 학습 시뮬레이션 도중 생성된 [state, action] 쌍 trajectory�
 label_db_name = 'query_result'
 label_table_name = 'labeled_data'
 label_db : 사용자 선호도 조사 결과 데이터를 저장 
-ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터 [1번trajectory segmentation, 2번trajectory segmentation, label]
+ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터 
+    [1번trajectory segmentation, 2번trajectory segmentation, label]
 
 ### 4. 시뮬레이션 결과 확인
 
@@ -95,8 +97,10 @@ simulator_result/
 
 gantt_chart : evaluate mode 혹은 result mode를 통해 생성된 gantt chart가 저장되는 곳 
 (파일명 : [시뮬레이션 실행 시간][활용된 데이터 셋]_gantt.html)
+
 reward_model_learning_result : generate_reward_model mode에서 reward model을 만들 때 발생한 loss 그래프를 저장하는 곳 
 (파일명 : [iteration]reward_loss.html)
+
 pbrl_learning_result : learning mode 중 pbrl algorithm을 학습시켰을 때 생성되는 learning 지표를 저장하는 곳 
 (파일명 : [iteration]Change_in_loss_[r_squared].html)
 
