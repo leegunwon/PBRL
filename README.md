@@ -95,16 +95,16 @@ simulator_result/
                  
 
 
-**gantt_chart** : evaluate mode 혹은 result mode를 통해 생성된 gantt chart가 저장되는 곳 
+**gantt_chart** : evaluate mode 혹은 result mode 결과 저장
 (파일명 : [시뮬레이션 실행 시간][활용된 데이터 셋]_gantt.html)
 
-**reward_model_learning_result** : generate_reward_model mode에서 reward model을 만들 때 발생한 loss 그래프를 저장하는 곳 
+**reward_model_learning_result** : generate_reward_model mode 학습 지표 저장
 (파일명 : [iteration]reward_loss.html)
 
-**pbrl_learning_result** : learning mode 중 pbrl algorithm을 학습시켰을 때 생성되는 learning 지표를 저장하는 곳 
+**pbrl_learning_result** : learning mode 중 pbrl algorithm 학습 지표 저장
 (파일명 : [iteration]Change_in_loss_[r_squared].html)
 
-4개의 learning 지표
+4개의 학습 지표
 1. episode에 따른 cumulative reward 변화
 2. episode에 따른 utilization 변화
 3. cumulative reward와 utilization 간의 상관관계
