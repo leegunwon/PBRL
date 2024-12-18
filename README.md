@@ -36,17 +36,17 @@ PBRL은 **Preference-Based Reinforcement Learning(선호 기반 강화학습)**�
 ### 1. 단순 시뮬레이션 동작
 run_simulator.py 파일 실행
 run_simulator.py 내부의 simulator.main(mode, DSP_rule)을 설정한 후 실행.
-mode : 
+**mode** : 
   dsp_run : 선택한 DSP_rule을 기반으로 시뮬레이션을 수행
   DSP_rule_check : src/common/Parameters.py에 정의되어 있는 DSP_rule_check 파라미터 값이 True로 설정된 모든 DSP_rule로 시뮬레이션을 수행
 
-DSP_rule :
+**DSP_rule** :
  사용 가능한 DSP_rule : [SPT, SPTSSU, SSU, LOR, MOR, EDD , MST, FIFO, LIFO] 중 하나 선택
 
 ### 2. 학습 시뮬레이션 동작
 run_learning.py 파일 실행
 run_learning.py 내부의 simulator.main(mode, algorithm, iteration)을 설정한 후 실행
-mode : 
+**mode** : 
  learning : 선택한 강화학습 알고리즘으로 에이전트를 학습 
  evaluate : 선택된 강화학습 알고리즘으로 학습된 에이전트의 학습 결과를 평가
  result : 선택한 에이전트를 사용한 시뮬레이션 결과 확인
@@ -55,11 +55,11 @@ mode :
  (현재 두 trajectory segmentation 중 setup time이 적은 segementation을 선택하도록 구현)
  generate_reward_model : 선호도 조사 데이터를 바탕으로 reward model을 학습
 
-algorithm :
+**algorithm** :
  사용 가능한 알고리즘 : [DQN, DDQN, DQN_action_masking, DQN_CNN, PBRL, PPO]
  검증된 알고리즘 [DQN, PBRL]
 
-iteration : 
+**iteration** : 
  실험을 반복해서 진행할 때 구분하기 위한 구분자
  ex) iteration=0 -> 생성되는 param 파일명 0param.pt
 
@@ -95,13 +95,13 @@ simulator_result/
                  
 
 
-gantt_chart : evaluate mode 혹은 result mode를 통해 생성된 gantt chart가 저장되는 곳 
+**gantt_chart** : evaluate mode 혹은 result mode를 통해 생성된 gantt chart가 저장되는 곳 
 (파일명 : [시뮬레이션 실행 시간][활용된 데이터 셋]_gantt.html)
 
-reward_model_learning_result : generate_reward_model mode에서 reward model을 만들 때 발생한 loss 그래프를 저장하는 곳 
+**reward_model_learning_result** : generate_reward_model mode에서 reward model을 만들 때 발생한 loss 그래프를 저장하는 곳 
 (파일명 : [iteration]reward_loss.html)
 
-pbrl_learning_result : learning mode 중 pbrl algorithm을 학습시켰을 때 생성되는 learning 지표를 저장하는 곳 
+**pbrl_learning_result** : learning mode 중 pbrl algorithm을 학습시켰을 때 생성되는 learning 지표를 저장하는 곳 
 (파일명 : [iteration]Change_in_loss_[r_squared].html)
 
 4개의 learning 지표
