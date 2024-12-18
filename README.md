@@ -81,8 +81,8 @@ label_table_name = 'labeled_data'
 ```
 - **sim_db** : 학습 시뮬레이션 도중 생성된 [state, action] 쌍 trajectory를 에피소드 별로 저장
 - **label_db** : 사용자 선호도 조사 결과 데이터를 저장 
- - ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터 
-[1번trajectory segmentation, 2번trajectory segmentation, label]
+  - ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터
+  - [1번trajectory segmentation, 2번trajectory segmentation, label]
 
 
 ### 4. 시뮬레이션 결과 확인
@@ -116,10 +116,23 @@ simulator_result/
 matplotlib, seaborn, plotly : 위 지표를 각각의 라이브러리를 활용하여 출력한 결과를 저장하는 곳
 
 ### 4. 파라미터 세팅
-src/Hyperparameter.yaml : 자주 사용하는 파라미터
-src/common/pathConfig.py : 파일 경로
-src/common/Parameters.py : 시뮬레이터와 연관된 파라미터
-src/learner/common/Hyperparameters.py : 학습 알고리즘과 연관된 파라미터 
-src/chart/ChartParameters.py : pbrl learning 지표 출력 관리 파라미터 
-src/params_data/reinforcement_learning : 강화학습 에이전트 파라미터 저장
-src/params_data/reward_model_params : 보상 함수 뉴럴넷 파라미터 저장
+- **`src/Hyperparameter.yaml`**  
+  자주 사용하는 파라미터 설정 파일.
+
+- **`src/common/pathConfig.py`**  
+  파일 경로를 관리하는 설정 파일.
+
+- **`src/common/Parameters.py`**  
+  시뮬레이터와 연관된 파라미터를 정의하는 파일.
+
+- **`src/learner/common/Hyperparameters.py`**  
+  학습 알고리즘과 연관된 파라미터를 정의하는 파일.
+
+- **`src/chart/ChartParameters.py`**  
+  PBRL 학습 지표 출력을 관리하는 파라미터 파일.
+
+- **`src/params_data/reinforcement_learning`**  
+  강화학습 에이전트 파라미터를 저장하는 디렉토리.
+
+- **`src/params_data/reward_model_params`**  
+  보상 함수 뉴럴넷 파라미터를 저장하는 디렉토리.
