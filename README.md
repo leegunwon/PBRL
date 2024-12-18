@@ -34,8 +34,8 @@ PBRL은 **Preference-Based Reinforcement Learning(선호 기반 강화학습)**�
 ## 사용 방법
 
 ### 1. 단순 시뮬레이션 동작
-run_simulator.py 파일 실행
-run_simulator.py 내부의 simulator.main(mode, DSP_rule)을 설정한 후 실행.
+`run_simulator.py`
+`run_simulator.py` 내부의 `simulator.main(mode, DSP_rule)`을 설정한 후 실행.
 **mode** : 
   dsp_run : 선택한 DSP_rule을 기반으로 시뮬레이션을 수행
   DSP_rule_check : src/common/Parameters.py에 정의되어 있는 DSP_rule_check 파라미터 값이 True로 설정된 모든 DSP_rule로 시뮬레이션을 수행
@@ -44,16 +44,16 @@ run_simulator.py 내부의 simulator.main(mode, DSP_rule)을 설정한 후 실�
  사용 가능한 DSP_rule : [SPT, SPTSSU, SSU, LOR, MOR, EDD , MST, FIFO, LIFO] 중 하나 선택
 
 ### 2. 학습 시뮬레이션 동작
-run_learning.py 파일 실행
-run_learning.py 내부의 simulator.main(mode, algorithm, iteration)을 설정한 후 실행
-**mode** : 
- learning : 선택한 강화학습 알고리즘으로 에이전트를 학습 
- evaluate : 선택된 강화학습 알고리즘으로 학습된 에이전트의 학습 결과를 평가
- result : 선택한 에이전트를 사용한 시뮬레이션 결과 확인
- query_program : 사용자 선호도 조사 프로그램 실행
- label_generator : 자동으로 선호도 조사하는 프로그램 실행 
- (현재 두 trajectory segmentation 중 setup time이 적은 segementation을 선택하도록 구현)
- generate_reward_model : 선호도 조사 데이터를 바탕으로 reward model을 학습
+`run_learning.py` 파일 실행  
+`run_learning.py` 내부의 `simulator.main(mode, algorithm, iteration)`을 설정한 후 실행  
+
+- **mode**:
+  - `learning` : 선택한 강화학습 알고리즘으로 에이전트를 학습
+  - `evaluate` : 선택된 강화학습 알고리즘으로 학습된 에이전트의 학습 결과를 평가
+  - `result` : 선택한 에이전트를 사용한 시뮬레이션 결과 확인
+  - `query_program` : 사용자 선호도 조사 프로그램 실행
+  - `label_generator` : 자동으로 선호도 조사하는 프로그램 실행 (현재 두 trajectory segmentation 중 setup time이 적은 segmentation을 선택하도록 구현)
+  - `generate_reward_model` : 선호도 조사 데이터를 바탕으로 reward model을 학습
 
 **algorithm** :
  사용 가능한 알고리즘 : [DQN, DDQN, DQN_action_masking, DQN_CNN, PBRL, PPO]
