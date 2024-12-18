@@ -13,15 +13,24 @@ hyperparameter:
   learning_rate: 0.001
   batch_size: 32
   buffer_limit: 50000
-  input_layer: 42
+  input_layer: 50
   output_layer: 1
-  episode: 1000
+  episode: 10000
 
 
 configRL:
-  state_type: simple_state  # state_12, state_36, cnn, cnn_state, simple_state
+  state_type: pbrl_state  # state_12, state_36, cnn, cnn_state, pbrl_state
   action_type: dsp_rule          #
   reward_type: util          # makespan, rtf, combination_reward_q_over_time_and_makespan, util
+
+config_reward_model:
+  reward_lr : 0.001
+  reward_batch : 128
+  reward_update : 200
+  # sigmoid, ReLU, tanh, leaky_ReLU, ELU, SELU, GELU, Softplus, Swish
+  reward_model_activation_function : ReLU
+  trajectory_segmentation_size : 3
+  label_generation_size : 1000 # 한 번에 생성할 label 개수
 
 engine:
   gantt_on_check: True  # 간트생성 on/off

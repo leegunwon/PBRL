@@ -32,59 +32,70 @@ class DQN:
             optimizer.step()
 
     @classmethod
-    def main(cls):
+    def main(cls, count):
+        """
+        Hyperparameters.mode : 1, 2, 3, 4
+        1 : random하게 시뮬레이션을 수행하고 그 결과를 memory에 저장
+        2 :
+        """
+        print("main function run")
         env = Simulator
         q = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         q_target = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         q_target.load_state_dict(q.state_dict())
         memory = ReplayBuffer(Hyperparameters.buffer_limit)
-        score = 0.0
-        optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
-
         makespan_list = []
-        q_over_time_list = []
         score_list = []
         util_list = []
-        score_list2 = []
-        save_directory = f"{pathConfig.model_save_path}{os.sep}{Parameters.simulation_time}"  # 디렉토리 경로를 지정합니다.
-        max_score = -1
-        if Parameters.param_down_on:
-            os.makedirs(save_directory, exist_ok=True)  # 경로 없을 시 생성
+        loss_list = []
+        loss = 0
+        optimizer = optim.Adam(q.parameters(), lr=Hyperparameters.learning_rate)
+        save_directory = f"{pathConfig.reinforcement_model_params_path}"
+        check_point = 0
+        # model load
+        cls.load_reward_model(count)
+        cls.load_q_net(q, count)
 
+
+        # cls.learn_reward()
         for n_epi in range(Hyperparameters.episode):
-            epsilon = max(0.01, 0.8 - 0.001 * n_epi)
+            epsilon = max(0.01, 0.8 - 0.9 /Hyperparameters.episode * n_epi)
             s = env.reset(Parameters.datasetId)
+            epsilon_test = 0
             done = False
             score = 0.0
+            score_sub = 0.0
             while not done:
-                a = q.sample_action(torch.from_numpy(s).float(), epsilon)
+                # 뭐가 바뀌는 걸까? 아마도 q value가 바뀜 즉 action을
+                a = q.sample_action(s, epsilon)
                 s_prime, r, done = env.step(a)
+
                 done_mask = 0.0 if done else 1.0
-                if done == False:
-                    memory.put((s, a, r, s_prime, done_mask))
-                    s = s_prime
-                    score += r
+                memory.put([s, a, r, s_prime, done_mask])
+                s = s_prime
+                score += r
+
                 if done:
                     break
-            if (n_epi%10==0):
+
+            if (memory.size() > 100):
+                loss = cls.train(q, q_target, memory, optimizer)
+
+            if (n_epi % 5==0):
                 makespan_list, util_list, score_list = cls.script_performance(env, n_epi, epsilon, memory, score,
-                                                                                 True, makespan_list, util_list,
-                                                                                 score_list)
+                                                                              True, makespan_list, util_list,
+                                                                              score_list)
+                loss_list.append(loss)
                 q_target.load_state_dict(q.state_dict())
 
-            # env.gantt_chart()
-
-            # 학습구간
-            if memory.size() > 100:
-                cls.train(q, q_target, memory, optimizer)
-
-            # 결과 및 파라미터 저장
-            if Parameters.param_down_on:
+            if n_epi >= Hyperparameters.episode * 0.9:
                 params = q.state_dict()
-                file_name = str(n_epi) + "param.pt"
-                file_path = os.path.join(save_directory, file_name)
+                file_name = f"{check_point}q_net_param.pt"
+                file_path = os.path.join(f"{pathConfig.reinforcement_model_params_path}{os.sep}{count}", file_name)
                 torch.save(params, file_path)
+                check_point += 1
 
+        max_score = max(score_list)
         score_list = [s/max_score for s in score_list]
 
         fig = make_subplots(rows=1, cols=2)
@@ -141,7 +152,7 @@ class DQN:
         q = Qnet(Hyperparameters.input_layer, Hyperparameters.output_layer)
         mean_reward_by_checkpoint = {}
         max_reward_by_checkpoint = {}
-        for check_point_number in check_point_list:
+        for check_point_number in range(100):
             check_point = f"{checkpoint_path}/{check_point_number}param.pt"
         params = torch.load(check_point)
         q.load_state_dict(params)

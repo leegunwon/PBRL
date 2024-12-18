@@ -40,7 +40,9 @@ class Qnet(nn.Module):  # Qnet
         return x
 
     def sample_action(self, obs, epsilon):
-        out = self.forward(obs)
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.as_tensor(obs, dtype=torch.float32)
+        out = self.forward(obs.unsqueeze(0))
         coin = random.random()
         if coin < epsilon:
             return random.randint(0, self.output_layer - 1)

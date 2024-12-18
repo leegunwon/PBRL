@@ -6,32 +6,27 @@ class Hyperparameters:
     learning_rate = 0.001
     batch_size = 32
     buffer_limit = 50000
-    input_layer = 42
+    input_layer = 50
     output_layer = 1
-    episode = 10000
+    episode = 100
     exploration_episode = 2
     action_list = ["SPTSSU", "SSU", "EDD", "MST", "FIFO", "LIFO"]
     parameter_regularization = False
     # sigmoid, ReLU, tanh, leaky_ReLU, ELU, SELU, GELU, Softplus, Swish
-    reward_model_activation_function = "ReLU"
+    reward_model_activation_function = "sigmoid"
     # ReLU, tanh, SELU
     Q_net_activation_function = "ReLU"
-    load_model = False
-
-    # state_type default:8 simple:42
-    ds = 42
+    ds = input_layer
     da = 1
-    size_sample_action = 5
-    number_of_labeling = 1000
+    trajectory_segmentation_size = 5
+    label_generation_size = 100
     reward_lr = 0.001
     reward_batch = 128
-    reward_update = 1000
-    topK: 5
-    mode = 4
+    reward_update = 200
 
-    reward_type = "simple_state"
-    state_type = "dsp_rule"
-    action_type = "util"
+    reward_type = ""
+    state_type = ""
+    action_type = ""
 
     action_count = ""
     action_dimension = ""
@@ -45,6 +40,15 @@ class Hyperparameters:
         cls.input_layer = config['input_layer']
         cls.output_layer = config['output_layer']
         cls.episode = config['episode']
+
+    @classmethod
+    def init_reward_model_setting(cls, config):
+        cls.reward_lr = config['reward_lr']
+        cls.reward_batch = config['reward_batch']
+        cls.reward_update = config['reward_update']
+        cls.reward_model_activation_function = config['reward_model_activation_function']
+        cls.trajectory_segmentation_size = config['trajectory_segmentation_size']
+        cls.label_generation_size = config['label_generation_size']
 
     @classmethod
     def init_rl_config_setting(cls, config, action_list, simulator):
@@ -85,4 +89,4 @@ class Hyperparameters:
         elif cls.state_type == 'cnn_state':
             cls.input_layer = 29
         elif cls.state_type == 'simple_state':
-            cls.input_layer = 42
+            cls.input_layer = 50

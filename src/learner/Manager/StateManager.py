@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import re
+import torch
 from src.Object.Lot import *
 from src.learner.common.Hyperparameters import *
 
@@ -8,7 +9,7 @@ class StateManager:
     state_time = 0
 
     @classmethod
-    def get_state(cls, j_list, r_list, cur_runtime, number_of_job, bucket, oper_in_list, setup_change_counts):
+    def get_state(cls, j_list, r_list, cur_runtime, number_of_job, bucket, oper_in_list):
         if Hyperparameters.state_type == "state_12":
             s = cls.set_state_12(j_list, r_list, cur_runtime)
         elif Hyperparameters.state_type == "state_36":
@@ -21,9 +22,8 @@ class StateManager:
             s = cls.set_state_cnn_state(bucket, oper_in_list, cur_runtime)
         elif Hyperparameters.state_type == 'default_state':
             s = cls.set_state_default(j_list, r_list, cur_runtime)
-        elif Hyperparameters.state_type == 'simple_state':
-            s = cls.set_state_simple(j_list, r_list, cur_runtime, setup_change_counts)
-
+        elif Hyperparameters.state_type == 'pbrl_state':
+            s = cls.set_pbrl_simple(j_list, r_list)
         return s
 
     @classmethod
@@ -248,6 +248,8 @@ class StateManager:
         number_of_job_done = 0
         q_time_over_job = 0
         q_time_safe_job = 0
+
+        number_of_jobs_t = {}
         for job in j_list:  # job 이름과 operation이름 찾기
             if j_list[job].status == "WAIT":
                 number_of_job_wait += 1
@@ -316,49 +318,45 @@ class StateManager:
         return job_type_num
 
     @classmethod
-    def count_job_type(cls, job_type, counter):
-        if job_type == 'j01':
+    def count_job_type(cls, job, counter):
+        if job.job_type == 'j01':
             counter[0] += 1
-        elif job_type == 'j02':
+        elif job.job_type == 'j02':
             counter[1] += 1
-        elif job_type == 'j03':
+        elif job.job_type == 'j03':
             counter[2] += 1
-        elif job_type == 'j04':
+        elif job.job_type == 'j04':
             counter[3] += 1
-        elif job_type == 'j05':
+        elif job.job_type == 'j05':
             counter[4] += 1
 
         return counter
 
     @classmethod
-    def set_state_simple(cls, j_list, r_list, curr_time, setup_change_counts):
+    def set_pbrl_simple(cls, j_list, r_list):
         # 각 머신에 할당되어 있는 lot의 종료 시간
         # 각 머신에 할당된 job type
+        # 각 job type 별 남은 개수
+        # 각 job type 별 가장 due date가 빠른 job의 남은 시간
         s = []
-        number_of_job_done = 0
+        due_date_for_job_type = {'j01': 1000000000, 'j02': 1000000000, 'j03': 1000000000, 'j04': 1000000000, 'j05': 1000000000}
         counter = [0, 0, 0, 0, 0]
         for machine in r_list:
             s.append(r_list[machine].reservation_time)
-        max_time = max(s)
-        for i in range(len(s)):
-            s[i] = s[i] / max_time
+        s = [round(x / 24, 4) for x in s]
         for machine in r_list:
             s += cls.change_job_type_to_num(r_list[machine].setup_status)
-            util = r_list[machine].cal_util2()
-            s.append(util)  # 7~16
 
         for job in j_list.items():  # job 이름과 operation이름 찾기
-            if job[1].status == "DONE":
-                number_of_job_done += 1
-                counter = cls.count_job_type(job[1].job_type, counter)
+            if job[1].status == "WAIT":
+                counter = cls.count_job_type(job[1], counter)
+                # 가장 납기가 얼마 남지 않은 job
+                if due_date_for_job_type[job[1].job_type] > job[1].duedate:
+                    due_date_for_job_type[job[1].job_type] = job[1].duedate
+
+        due_date = [round(i/24, 4) if i != 1000000000 else 0 for i in due_date_for_job_type.values()]
+        s += due_date
         s += counter
-
-        if number_of_job_done == 0:
-            s.append(0.0)
-        else:
-            s.append((setup_change_counts)/(number_of_job_done))
-
-        df = pd.Series(s)
-        s = df.to_numpy()
-
+        # s.append(round(curr_time/24, 2))
+        s = np.array(s)
         return s

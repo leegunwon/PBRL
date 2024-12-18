@@ -4,9 +4,10 @@ from src.learner.Algorithm.DQN_action_masking import *
 from src.learner.Algorithm.DQN_CNN import *
 from src.learner.Algorithm.DDQN import *
 from src.learner.Algorithm.PBRL import PBRL
-from src.save_data.data_generator.compare_chart import *
-from src.save_data.data_generator.data_generator import *
-import plotly.graph_objects as go
+from src.simulator.data_generator.compare_chart import *
+from src.simulator.data_generator.data_generator import *
+from src.master_db.PBRL_DB_interface import delete_episode_data_from_db, get_simulation_result_record_count
+from src.master_db.PBRL_DB_interface import delete_labeled_data_from_db, get_labeled_data_record_count
 import yaml
 import logging
 import os
@@ -31,10 +32,11 @@ class Run_Simulator:
 
         Hyperparameters.init_hyperparameter_setting(config_data['hyperparameter'])
         Hyperparameters.init_rl_config_setting(config_data['configRL'], self.action_list, Simulator)
+        Hyperparameters.init_reward_model_setting(config_data['config_reward_model'])
 
         print("set complete")
 
-    def main(self, mode, algorithm, iteration):
+    def main(self, mode, algorithm="", iteration=-1):
         logging.info(f"mode: {mode}")
         logging.info(f"algoritm: {algorithm}")
         if mode == "learning":
@@ -42,7 +44,7 @@ class Run_Simulator:
                 if ActionManager.action_type == "action_masking":
                     DQN_Action_Masking.main()
                 else:
-                    DQN.main()
+                    PBRL.main(iteration)
             elif algorithm == 'ddqn':
                 DDQN.main()
             elif algorithm == 'dqn_cnn':
@@ -50,34 +52,21 @@ class Run_Simulator:
             elif algorithm == 'PPO':
                 ppo = PPO()
                 ppo.main()
-            elif algorithm == 'PBRL':
-                r_sqrd = []
-                for rep in range(iteration):
-                    r_sqrd.append(PBRL.main(rep))
-                print(r_sqrd)
-
+            elif algorithm == 'pbrl':
+                delete_episode_data_from_db()
+                PBRL.main(iteration)
             elif algorithm == 'reward_model':
-                # reward_model 학습 및 생성
-                for j in range(iteration):
-                    PBRL.learn_reward(j)
+                PBRL.learn_reward(iteration)
 
         elif mode == 'evaluate':
             if algorithm == "dqn":
-                DQN.get_evaluate(f"{pathConfig.model_save_path}{os.sep}240209_233447", 100,
-                                 ["sks_train_1"])
-            elif algorithm == "PBRL":
-                for repp in range(iteration):
-                    PBRL.evaluate(repp)
+                PBRL.evaluate(iteration)
+            elif algorithm == "pbrl":
+                PBRL.evaluate(iteration)
 
         elif mode == "result":
             if algorithm == 'dqn':
                 DQN.get_result(f"{pathConfig.model_save_path}{os.sep}240209_233447{os.sep}24param.pt", ["sks_train_1"])
-
-        elif mode == "make_dataset":
-            Hyperparameters.mode = 1
-            for repp in range(iteration):
-                PBRL.main(-1)
-                generate_label()
 
         elif mode == "query_program":
             app_run()
@@ -85,22 +74,22 @@ class Run_Simulator:
         elif mode == "label_generator":
             generate_label()
 
-
-if True:
+if __name__ == "__main__":
     simulator = Run_Simulator()
-    # mode : query_program, evaluate, learning, result, make_dataset, label_generator
-    # algorithm : reward_model, dqn, PBRL
-    iteration_count = 1
-    # simulator.main(mode="make_dataset", algorithm="PBRL", iteration=iteration_count)
-    # simulator.main(mode="learning", algorithm="reward_model", iteration=iteration_count)
-    simulator.main(mode="learning", algorithm="PBRL", iteration=iteration_count)
-    # util_sum = 0
-    # for i in range(iteration_count):
-    #     util = PBRL.evaluate(i)
-    #     util_sum += util
-    # print(util_sum)
 
+    # labeled_data DB 초기화
+    # delete_labeled_data_from_db()
+    # episode_data DB 초기화
+    # delete_episode_data_from_db()
 
-# gantt chart 쑬 것인지
-# 학습 방법, kpi목표
-# 모든 디스패칭 룰 돌리기
+    for i in range(1):
+        # mode : query_program, evaluate, learning, result, label_generator
+        # algorithm : reward_model, dqn, pbrl
+
+        simulator.main(mode="learning", algorithm="pbrl", iteration=i)
+        simulator.main(mode="label_generator", algorithm="", iteration=i)
+        simulator.main(mode="learning", algorithm="reward_model", iteration=i)
+        simulator.main(mode="learning", algorithm="pbrl", iteration=i)
+        simulator.main(mode="evaluate", algorithm="pbrl", iteration=i)
+        # simulator.main(mode="query_program", algorithm="", iteration=i)
+

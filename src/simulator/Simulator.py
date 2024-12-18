@@ -1,5 +1,4 @@
 from src.common import Parameters
-from src.learner.common.Hyperparameters import *
 from src.Object.Event import *
 from collections import defaultdict
 from src.Object.Resource import *
@@ -7,7 +6,7 @@ from src.Object.Resource import *
 from src.learner.Manager.StateManager import *
 from src.learner.Manager.RewardManager import *
 from src.learner.Manager.ActionManager import *
-from src.simulator.GanttChart import *
+from src.chart.GanttChart import *
 from master_db.DataInventory import *
 from master_db.DB_query import *
 
@@ -132,7 +131,7 @@ class Simulator:
         cls.event_list.append(e)
         cls.get_demand_by_planhorizon()
         s = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
-                                   cls.demand_by_planhorizon, cls.oper_in_list, cls.setup_change_counts)
+                                   cls.demand_by_planhorizon, cls.oper_in_list)
         cls.observation_space = s.size
 
         cls.lot_categorize()
@@ -197,7 +196,7 @@ class Simulator:
                     cls.process_event()
                     if cls.plan_finish == True:
                         s_prime = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
-                                                         cls.demand_by_planhorizon, cls.oper_in_list, cls.setup_change_counts)
+                                                         cls.demand_by_planhorizon, cls.oper_in_list)
                         r = 0
                         done = True
                         break
@@ -210,11 +209,18 @@ class Simulator:
                                                                cls.machine_list, cls.runtime, candidate,
                                                                cls.demand_by_planhorizon, cls.oper_in_list)
                 cls.update_bucket(candidate)
-
-                s_prime = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
-                                                 cls.demand_by_planhorizon, cls.oper_in_list, cls.setup_change_counts)
                 cls.get_event(candidate, machineId, rule_name)
-                # print(cls.event_list)
+
+                machineId = cls.select_machine()
+                if machineId == "NONE":
+                    cls.process_event()
+                    if cls.plan_finish == True:
+                        s_prime = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
+                                                         cls.demand_by_planhorizon, cls.oper_in_list)
+                        done = True
+                        break
+                s_prime = StateManager.get_state(cls.lot_list, cls.machine_list, cls.runtime, cls.number_of_job,
+                                                 cls.demand_by_planhorizon, cls.oper_in_list)
                 break
 
         return s_prime, r, done
@@ -260,11 +266,6 @@ class Simulator:
 
     @classmethod
     def step3(cls, inputs):
-        """
-
-        :param inputs: action, [sample action]
-        :return:
-        """
         if cls.pre_set ==False:
             cls.pre_setting()
         while True:
@@ -285,16 +286,14 @@ class Simulator:
                 rule_name, candidate = ActionManager.get_lot(candidate_list, int(inputs[0]), cls.runtime)
                 # reward 함수를 통해 reward 계산
                 cls.update_bucket(candidate)
-                cls.get_event_PBRL(candidate, machineId, rule_name, inputs[1])
+                cls.get_event_ver_pbrl(candidate, machineId, rule_name, inputs[1])
                 break
     @classmethod
     def step4(cls, inputs):
         """
-
         :param inputs: action, [sample action]
         :return:
         """
-
         while True:
             machineId = cls.select_machine()
             if machineId == "NONE":
@@ -313,12 +312,11 @@ class Simulator:
                 rule_name, candidate = ActionManager.get_lot(candidate_list, int(inputs[0]), cls.runtime)
                 # reward 함수를 통해 reward 계산
                 cls.update_bucket(candidate)
-                cls.get_event_PBRL(candidate, machineId, rule_name, inputs[1])
+                cls.get_event_ver_pbrl(candidate, machineId, rule_name, inputs[1])
                 break
 
     @classmethod
     def run(cls, rule):
-
         while True:
             machineId = cls.select_machine()
             if machineId != "NONE":
@@ -358,6 +356,8 @@ class Simulator:
     def gantt_chart(cls):
         if Parameters.gantt_on:
             GanttChart.play_gantt(datasetId=cls.dataSetId)
+
+
 
     @classmethod
     def load_lot(cls, lot_id):
@@ -604,7 +604,6 @@ class Simulator:
 
         cls.step_number += 1
 
-
     @classmethod
     def pre_setting(cls):
         for e in cls.event_list:
@@ -617,7 +616,7 @@ class Simulator:
 
 
     @classmethod
-    def get_event_PBRL(cls, candidate, machineId, rule_name, sample_label):
+    def get_event_ver_pbrl(cls, candidate, machineId, rule_name, sample_trajectory):
         """
         주어진 후보(candidate), 기계 ID(machineId), 및 규칙 이름(rule_name)을 바탕으로 이벤트를 생성하고 관리하는 함수입니다.
 
@@ -679,7 +678,7 @@ class Simulator:
             cls.event_list.append(e)
             GanttChart.save_histories("setup", e.job.id, e.jop, datetime.fromtimestamp(e.start_time * 3600),
                                       datetime.fromtimestamp(e.end_time * 3600), e.machine.id, e.rule_name, e.step_num,
-                                      0, sample_label)
+                                      0, sample_trajectory)
 
         q_time_diff = cls.assign_setting(job, cls.machine_list[machineId],
                                          cls.runtime + setup_time + process_time)
@@ -691,8 +690,8 @@ class Simulator:
         cls.event_list.append(e)
         GanttChart.save_histories(e.job.job_type, e.job.id, e.jop, datetime.fromtimestamp(e.start_time * 3600),
                                   datetime.fromtimestamp(e.end_time * 3600), e.machine.id, e.rule_name, e.step_num,
-                                  q_time_diff, sample_label)
-        if sample_label == True:
+                                  q_time_diff, sample_trajectory)
+        if sample_trajectory == True:
             cls.sample_setup_times += setup_time
 
         cls.step_number += 1
@@ -904,9 +903,7 @@ class Simulator:
                     else_lot.append(cls.lot_list[lotId])
         # rtf 계산 로직
         rtf = round(len(safe_lot) / len(rtf_target_lot) * 100, 2)
-        # print(len(safe_lot), len(rtf_target_lot))
-        # fig = px.timeline(self.plotlydf, x_start="Start", x_end="Finish", y="Resource", color="Task", width=1000, height=400)
-        # fig.show()
+
         return Flow_time, machine_util, util, makespan, Tardiness_time, Lateness_time, T_max, q_time_true, q_time_false, q_job_t, q_job_f, total_q_time_over, rtf
 
     @classmethod
@@ -927,3 +924,44 @@ class Simulator:
                 change_mac_list.append(mac)
 
         return random.choice(change_mac_list)
+
+    @classmethod
+    def performance_measure_for_pbrl(cls):
+        makespan = cls.runtime
+        Flow_time = 0
+        Tardiness_time = 0  # new
+        Lateness_time = 0  # new
+        T_max = 0  # new
+        operated_time = 0
+        whole_time = 0
+
+        for machineId in cls.machine_list:
+            value_added_time, full_time = cls.machine_list[machineId].cal_util()
+            operated_time += value_added_time
+            whole_time += full_time
+        util = operated_time / whole_time
+
+        for lotId in cls.lot_list:
+            # todo jobFlow time 네이밍
+            if cls.lot_list[lotId].status == "WAIT" and cls.lot_list[lotId].duedate <= cls.runtime:
+                cls.lot_list[lotId].tardiness_time = cls.runtime - cls.lot_list[lotId].duedate
+                cls.lot_list[lotId].lateness_time = cls.runtime - cls.lot_list[lotId].duedate
+            if cls.lot_list[lotId].tardiness_time > T_max:
+                T_max = cls.lot_list[lotId].tardiness_time
+
+            # todo WAIT 같은거 Enum처리
+            Tardiness_time += cls.lot_list[lotId].tardiness_time
+            Lateness_time += cls.lot_list[lotId].lateness_time
+
+        return Flow_time, util, makespan, Tardiness_time, Lateness_time
+
+    @classmethod
+    def cal_utilization(cls):
+        operated_time = 0
+        whole_time = 0
+        for machineId in cls.machine_list:
+            value_added_time, full_time = cls.machine_list[machineId].cal_util()
+            operated_time += value_added_time
+            whole_time += full_time
+        util = operated_time / whole_time
+
