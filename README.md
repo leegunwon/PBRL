@@ -75,14 +75,15 @@ db_port = '3306'
 
 sim_db_name = 'simulation_result' 
 sim_table_name = 'episode_data'
-sim_db : 학습 시뮬레이션 도중 생성된 [state, action] 쌍 trajectory를 에피소드 별로 저장
 
 label_db_name = 'query_result'
 label_table_name = 'labeled_data'
-label_db : 사용자 선호도 조사 결과 데이터를 저장 
-ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터 
-    [1번trajectory segmentation, 2번trajectory segmentation, label]
 ```
+- **sim_db** : 학습 시뮬레이션 도중 생성된 [state, action] 쌍 trajectory를 에피소드 별로 저장
+- **label_db** : 사용자 선호도 조사 결과 데이터를 저장 
+ - ex) 1번trajectory segmentation과 2번trajectory segmentation 선호도 조사 결과 데이터 
+[1번trajectory segmentation, 2번trajectory segmentation, label]
+
 
 ### 4. 시뮬레이션 결과 확인
 
