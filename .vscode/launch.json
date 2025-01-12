@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/run_learning.py",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Run Python Script"  // tasks.json에서 설정한 작업 이름
+        },
+        {
+            "name": "Python Debugger: Run Learning",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/run_learning.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        }
+    ]
+}

@@ -1,4 +1,4 @@
-from learner.Algorithm.PPO import PPO
+from src.learner.Algorithm.PPO import PPO
 from src.learner.Algorithm.DQN import *
 from src.learner.Algorithm.DQN_action_masking import *
 from src.learner.Algorithm.DQN_CNN import *
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         # mode : query_program, evaluate, learning, result, label_generator
         # algorithm : reward_model, dqn, pbrl
 
-        simulator.main(mode="learning", algorithm="pbrl", iteration=i)
+        simulator.main(mode="query_program", algorithm="pbrl", iteration=i)
         simulator.main(mode="label_generator", algorithm="", iteration=i)
         simulator.main(mode="learning", algorithm="reward_model", iteration=i)
         simulator.main(mode="learning", algorithm="pbrl", iteration=i)

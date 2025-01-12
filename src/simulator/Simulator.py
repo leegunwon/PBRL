@@ -93,7 +93,7 @@ class Simulator:
         cls.get_oper_info(cls.dataSetId)
         cls.get_lot(cls.dataSetId)
         cls.get_mac_status_info(cls.dataSetId)
-        with open(f'data_lot_machine_{cls.dataSetId}.pkl', 'wb') as file:
+        with open(f'PBRL/data_lot_machine_{cls.dataSetId}.pkl', 'wb') as file:
             df_list = [cls.lot_list, cls.machine_list, cls.event_list]
             pickle.dump(df_list, file)
         e = Event(None, "plan_end", "NONE", cls.runtime, Parameters.plan_horizon, "plan_end", "NONE", "NONE", "NONE", 0)
@@ -120,7 +120,7 @@ class Simulator:
         cls.setup_change_counts = 0
         cls.sample_setup_times = 0
 
-        with open(f'data_lot_machine_{cls.dataSetId[0]}.pkl', 'rb') as file:
+        with open(f'src/data_lot_machine_{cls.dataSetId[0]}.pkl', 'rb') as file:
             loaded_df_list = pickle.load(file)
 
         cls.lot_list = loaded_df_list[0]
