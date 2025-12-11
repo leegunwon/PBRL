@@ -171,12 +171,6 @@ def train_reward(self, sa_t_1, sa_t_2, labels):
         # labels_batch가 0 또는 1의 정수라면 .float()로 변환 필요
         criterion = torch.nn.BCEWithLogitsLoss()
         batch_loss = criterion(logits, labels_batch.float())
-        # 로지스틱 확률 계산
-        s = torch.sigmoid(r_hat1 - r_hat2)
-        logistic_prob = torch.cat([s, 1 - s], dim=-1)
-
-        # 손실 계산
-        batch_loss = self.CEloss(logistic_prob, labels_batch)
 
         # L2 정규화 추가
         if Hyperparameters.parameter_regularization:
