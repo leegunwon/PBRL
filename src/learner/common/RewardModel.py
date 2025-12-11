@@ -163,7 +163,14 @@ def train_reward(self, sa_t_1, sa_t_2, labels):
         # 모델 예측
         r_hat1 = self.r_hat_model(sa_t_1_batch).sum(dim=1)
         r_hat2 = self.r_hat_model(sa_t_2_batch).sum(dim=1)
+.
 
+        # 1. Logits 계산 (Sigmoid 적용 전)
+        logits = r_hat1 - r_hat2  # [Batch_size]
+
+        # labels_batch가 0 또는 1의 정수라면 .float()로 변환 필요
+        criterion = torch.nn.BCEWithLogitsLoss()
+        batch_loss = criterion(logits, labels_batch.float())
         # 로지스틱 확률 계산
         s = torch.sigmoid(r_hat1 - r_hat2)
         logistic_prob = torch.cat([s, 1 - s], dim=-1)
